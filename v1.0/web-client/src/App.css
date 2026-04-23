@@ -1,0 +1,21 @@
+.app-content {
+  margin-left: 74px;
+  min-height: 100vh;
+  width: calc(100vw - 74px);
+  box-sizing: border-box;
+  padding: 16px 16px 0px;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main-body {
+  flex: 1;
+}
+
+.app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0px;
+}

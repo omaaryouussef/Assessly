@@ -1,0 +1,109 @@
+/* Global CSS */
+:root{
+  --primary-color: #002137;
+  --hover-color: rgba(255, 255, 255, 0.08)
+}
+
+
+/* ========================================================================================== */
+/* Header CSS */
+.logo {
+  width: 65px;
+  height: 72px;
+  background: var(--primary-color);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-icon {
+  width: 20px;
+  height: 20px;
+  color: #f2e3d6;
+  background: #f2e3d6;
+  color: #0b2b44;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.navbar-container {
+  width: 65px;
+  height: calc(100vh - 72px);
+  background: var(--primary-color);
+  position: fixed;
+  top: 72px;
+  left: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 0 12px;
+  box-sizing: border-box;
+}
+
+.navbar-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.navbar-item {
+  width: 100%;
+  color: #ffffff;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 64px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.navbar-item svg {
+  font-size: 18px;
+}
+
+.navbar-item-text {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.navbar-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navbar-item.active {
+  background: var(--hover-color);
+  color: #ffffff;
+  font-weight: bold;
+  border-left: 3px solid #ffffff;
+}
+
+.logout-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #d6deeb;
+  cursor: pointer;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.logout-button:hover {
+  background: var(--hover-color);
+}
