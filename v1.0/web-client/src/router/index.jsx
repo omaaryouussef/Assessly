@@ -4,8 +4,9 @@ import {
   createRoutesFromElements,
   Navigate,
   Route,
+  Routes,
 } from "react-router-dom";
-import NavigationGuard from "../components/auth/NavigationGuard";
+import ProtectedRoutes from "../components/auth/ProtectedRoutes";
 import App from "../App";
 import AssessmentFeedbackPage from "../pages/AssessmentFeedbackPage";
 import AccountPage from "../pages/AccountPage";
@@ -27,11 +28,16 @@ import ViewAllStudentsGradePage from "../pages/Instructor/ViewAllStudentsGradePa
 import JoinCoursePage from "../pages/Student/JoinCoursePage";
 import TakeAssessmentPage from "../pages/Student/TakeAssessmentPage";
 import ViewGradesPage from "../pages/Student/ViewGradesPage";
+import LoginView from "../pages/auth/LoginView";
+// import RegisterView from "../pages/auth/RegisterView";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path="/" element={<App />}>
-      <Route path="/" element={<NavigationGuard />}>
+    <>
+    <Route path="/login" element={<LoginView />} />
+    {/* <Route path="/register" element={<RegisterView />} /> */}
+    <Route path="/" element={<ProtectedRoutes />}>
+      <Route path="/" element={<App />}>
         <Route index element={<AllCoursesPage />} />
         <Route path="courses" element={<AllCoursesPage />} />
         <Route path="assignments" element={<AllAssignmentsPage />} />
@@ -42,19 +48,20 @@ const router = createBrowserRouter(
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="account" element={<AccountPage />} />
-        <Route path="instructor/add-student" element={<AddStudentPage />} />
-        <Route path="instructor/assessment-studio" element={<AssessmentStudioPage />} />
-        <Route path="instructor/create-course" element={<CreateCoursePage />} />
-        <Route path="instructor/delete-course" element={<DeleteCoursePage />} />
-        <Route path="instructor/edit-course" element={<EditCoursePage />} />
-        <Route path="instructor/remove-student" element={<RemoveStudentPage />} />
-        <Route path="instructor/view-all-students-grade" element={<ViewAllStudentsGradePage />} />
-        <Route path="student/join-course" element={<JoinCoursePage />} />
-        <Route path="student/take-assessment" element={<TakeAssessmentPage />} />
-        <Route path="student/view-grades" element={<ViewGradesPage />} />
+        <Route path="add-student" element={<AddStudentPage />} />
+        <Route path="assessment-studio" element={<AssessmentStudioPage />} />
+        <Route path="create-course" element={<CreateCoursePage />} />
+        <Route path="delete-course" element={<DeleteCoursePage />} />
+        <Route path="edit-course" element={<EditCoursePage />} />
+        <Route path="remove-student" element={<RemoveStudentPage />} />
+        <Route path="view-all-students-grade" element={<ViewAllStudentsGradePage />} />
+        <Route path="join-course" element={<JoinCoursePage />} />
+        <Route path="take-assessment" element={<TakeAssessmentPage />} />
+        <Route path="view-grades" element={<ViewGradesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Route>
+    </>
   )
 );
 

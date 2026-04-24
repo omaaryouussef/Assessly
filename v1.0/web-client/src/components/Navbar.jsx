@@ -5,27 +5,37 @@ import {
   faBookOpen,
   faArrowRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
-import { faCalendar, faCircleQuestion, faCircleUser } from "@fortawesome/free-regular-svg-icons";
+import {
+  faCalendar,
+  faCircleQuestion,
+  faCircleUser,
+} from "@fortawesome/free-regular-svg-icons";
 
+import { useAuth } from "./auth/AuthWrapper";
+import { useNavigate } from "react-router-dom";
 
-function Navbar(){
-    return(
-        <>
-        <div className="navbar-container">
+function Navbar() {
+    const {logout} = useAuth();
+    const navigate = useNavigate();
+    const handleLogout = ()=>{
+        logout();
+        navigate("/login");
+    }
+  return (
+    <>
+      <div className="navbar-container">
         <ul className="navbar-links">
-            <NavbarItem title="Courses" path="/courses" icon={faBookOpen} />
-            <NavbarItem title="Schedule" path="/schedule" icon={faCalendar} />
-            <NavbarItem title="Help" path="/help" icon={faCircleQuestion} />
-            <NavbarItem title="Account" path="/account" icon={faCircleUser} />
+          <NavbarItem title="Courses" path="/courses" icon={faBookOpen} />
+          <NavbarItem title="Schedule" path="/schedule" icon={faCalendar} />
+          <NavbarItem title="Help" path="/help" icon={faCircleQuestion} />
+          <NavbarItem title="Account" path="/account" icon={faCircleUser} />
         </ul>
-        <button className="logout-button">
-            <FontAwesomeIcon icon={faArrowRightFromBracket} />
+        <button className="logout-button" onClick={handleLogout}>
+          <FontAwesomeIcon icon={faArrowRightFromBracket} />
         </button>
-        </div>
-        
-        </>
-
-    )
+      </div>
+    </>
+  );
 }
 
 export default Navbar;

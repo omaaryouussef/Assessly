@@ -1,7 +1,8 @@
 /* Global CSS */
 :root{
   --primary-color: #002137;
-  --hover-color: rgba(255, 255, 255, 0.08)
+  --hover-color: rgba(255, 255, 255, 0.08);
+  --secondary-color: #F8E9D9;
 }
 
 
