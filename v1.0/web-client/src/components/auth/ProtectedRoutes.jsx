@@ -1,12 +1,14 @@
-import React from "react";
-import { Outlet } from "react-router-dom";
-import { useAuth } from "./AuthWrapper.jsx";
-import { Navigate } from "react-router-dom";
+import React from 'react'
+import { Outlet } from 'react-router-dom'
+import { useAuth } from './AuthWrapper.jsx'
+import { Navigate } from 'react-router-dom'
 
 function ProtectedRoutes() {
-  // Placeholder guard: plug auth logic here later.
-  const { user } = useAuth();
-  return user ? <Outlet /> : <Navigate to="/login" />;
+  const { user, loading } = useAuth()
+  if (loading) {
+    return null
+  }
+  return user ? <Outlet /> : <Navigate to="/login" replace />
 }
 
-export default ProtectedRoutes;
+export default ProtectedRoutes

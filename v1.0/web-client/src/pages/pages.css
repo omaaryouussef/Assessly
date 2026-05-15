@@ -208,6 +208,39 @@
   content: "\f023";
 }
 
+.password-input-wrap--toggle input {
+  padding-right: 44px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.password-toggle-btn:hover {
+  color: #64748b;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid #135bec;
+  outline-offset: 2px;
+}
+
 .name-input-wrap::before {
   content: "\f007";
 }

@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGoogle } from '@fortawesome/free-brands-svg-icons'
-import { faBuildingColumns } from '@fortawesome/free-solid-svg-icons'
+import {
+  faBuildingColumns,
+  faEye,
+  faEyeSlash,
+} from '@fortawesome/free-solid-svg-icons'
 
 function RegisterView() {
   const { register } = useAuth()
@@ -15,6 +19,8 @@ function RegisterView() {
   const [auc_id, setID] = useState('')
   const [role, setRole] = useState('INSTRUCTOR')
   const [errorMessage, setErrorMessage] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const validateEmail = (email) => {
     return /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(email)
@@ -118,26 +124,49 @@ function RegisterView() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <div className="input-icon-wrap password-input-wrap">
+            <div className="input-icon-wrap password-input-wrap password-input-wrap--toggle">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="..................."
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
               />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+              </button>
             </div>
           </div>
 
           <div className="form-group">
             <label htmlFor="cPassword">Confirm password</label>
-            <div className="input-icon-wrap password-input-wrap">
+            <div className="input-icon-wrap password-input-wrap password-input-wrap--toggle">
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="..................."
                 id="cPassword"
+                value={cPassword}
                 onChange={(e) => setCPassword(e.target.value)}
+                autoComplete="new-password"
               />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                aria-label={
+                  showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'
+                }
+              >
+                <FontAwesomeIcon
+                  icon={showConfirmPassword ? faEyeSlash : faEye}
+                />
+              </button>
             </div>
           </div>
 

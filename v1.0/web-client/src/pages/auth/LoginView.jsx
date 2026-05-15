@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
-import { faBuildingColumns } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBuildingColumns,
+  faEye,
+  faEyeSlash,
+} from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../components/auth/AuthWrapper";
 import { useNavigate } from "react-router-dom";
 
@@ -11,6 +15,7 @@ function LoginView() {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
   const validateEmail = (email) => {
@@ -78,14 +83,23 @@ function LoginView() {
               </div>
               <div className="form-group">
                 <label htmlFor="password">Password</label>
-                <div className="input-icon-wrap password-input-wrap">
+                <div className="input-icon-wrap password-input-wrap password-input-wrap--toggle">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     id="password"
                     placeholder="................"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
                   />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                  </button>
                 </div>
               </div>
               <label htmlFor="remember" className="remember-row">
