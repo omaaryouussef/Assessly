@@ -144,7 +144,8 @@
 }
 
 .form-group input[type="email"],
-.form-group input[type="password"] {
+.form-group input[type="password"],
+.form-group input[type="text"] {
   height: 44px;
   width: 100%;
   border: 1px solid #d6dfec;
@@ -159,8 +160,28 @@
 }
 
 .form-group input[type="email"]::placeholder,
-.form-group input[type="password"]::placeholder {
+.form-group input[type="password"]::placeholder,
+.form-group input[type="text"]::placeholder {
   line-height: 44px;
+}
+
+.form-group select {
+  height: 44px;
+  width: 100%;
+  border: 1px solid #d6dfec;
+  border-radius: 8px;
+  background: #f8fafd;
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 44px;
+  color: #334155;
+  outline: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.form-group .input-icon-wrap select {
+  padding: 0 12px 0 36px;
 }
 
 .input-icon-wrap {
@@ -185,6 +206,18 @@
 
 .password-input-wrap::before {
   content: "\f023";
+}
+
+.name-input-wrap::before {
+  content: "\f007";
+}
+
+.id-input-wrap::before {
+  content: "\f2c2";
+}
+
+.role-input-wrap::before {
+  content: "\f0c0";
 }
 
 .remember-row {
@@ -264,7 +297,7 @@
   opacity: 1;
 }
 
-.login-error-message {
+.error-message {
   border: 1px solid rgba(220, 38, 38, 0.35);
   background: rgba(220, 38, 38, 0.08);
   padding: 10px 12px;
@@ -294,4 +327,185 @@
   color: blue;
   text-decoration: none;
   font-weight: 600;
+}
+
+/* Register page — markup: .register-container > .register-header + .register-form */
+.register-container {
+  min-height: 100vh;
+  width: 100%;
+  background: #f2f4f9;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 20px 0px
+}
+
+.register-container::before,
+.register-container::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: #135bec;
+  opacity: 0.14;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.register-container::before {
+  top: -130px;
+  left: -130px;
+}
+
+.register-container::after {
+  right: -130px;
+  bottom: -130px;
+}
+
+.register-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+.register-header {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto 25px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.register-header .register-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin: 0 auto;
+  background: none;
+}
+
+/* Icon sits in same “tile” as login; h1 sits below the tile (not inside the beige box) */
+.register-header .register-logo svg,
+.register-header .register-logo .login-logo-icon {
+  width: 25px !important;
+  height: 25px !important;
+  padding: 22px 20px;
+  box-sizing: content-box;
+  border-radius: 8px;
+  background: var(--secondary-color);
+  color: var(--primary-color);
+}
+
+.register-header .register-logo h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--bold-text-color);
+  line-height: 1.2;
+}
+
+.register-header::after {
+  content: "Academic Assessment Platform";
+  display: block;
+  margin-top: 4px;
+  color: var(--light-text-color);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.register-form {
+  width: 420px;
+  max-width: 100%;
+  background: #ffffff;
+  border: 1px solid #e4e8f0;
+  border-radius: 10px;
+  padding: 24px;
+  box-sizing: border-box;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.register-form .form-header-text {
+  margin-bottom: 32px;
+}
+
+.register-form .form-header-text h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.register-form .form-header-text p {
+  margin: 4px 0 0;
+  color: #748397;
+  font-size: 14px;
+}
+
+.register-form form {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.register-form form .auth-buttons {
+  margin-top: 0;
+}
+
+.register-form .register-footer {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 16px;
+  margin: 24px 0 0;
+  text-align: center;
+  color: #566477;
+  font-size: 14px;
+}
+
+.register-form .register-footer a {
+  color: blue;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.register-form button[type="submit"] {
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: #032f50;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-form button[type="submit"]::after,
+.register-form .google-signin-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.register-form .google-signin-btn::after {
+  background: rgba(2, 6, 23, 0.05);
+}
+
+.register-form button[type="submit"]:hover::after,
+.register-form .google-signin-btn:hover::after {
+  opacity: 1;
 }

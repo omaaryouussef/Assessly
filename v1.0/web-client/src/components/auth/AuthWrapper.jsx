@@ -89,11 +89,10 @@ function AuthWrapper({ children }) {
         },
         body: JSON.stringify({ email, password, name, auc_id, role }),
       });
-      if (!response.ok) {
-        setLoading(false);
-        return;
-      }
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Registration failed");
+      }
       if (data.error) {
         throw new Error(data.error);
       }
@@ -102,10 +101,11 @@ function AuthWrapper({ children }) {
       setUser(user);
       setToken(token);
       setIsAuthenticated(true);
-      return;
+      setLoading(false);
+      return { token, user };
     } catch (error) {
-      console.log("Error: ", error);
-      return;
+      setLoading(false);
+      throw error;
     }
   };
   const logout = () => {

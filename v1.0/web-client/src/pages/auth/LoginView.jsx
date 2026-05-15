@@ -97,7 +97,7 @@ function LoginView() {
                 />
                 <span>Remember me</span>
               </label>
-              {errorMessage ? <p className="login-error-message">{errorMessage}</p> : null}
+              {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
               <div className="auth-buttons">
                 <button type="button" className="google-signin-btn">
                   <FontAwesomeIcon icon={faGoogle} />

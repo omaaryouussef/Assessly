@@ -29,13 +29,13 @@ import JoinCoursePage from "../pages/Student/JoinCoursePage";
 import TakeAssessmentPage from "../pages/Student/TakeAssessmentPage";
 import ViewGradesPage from "../pages/Student/ViewGradesPage";
 import LoginView from "../pages/auth/LoginView";
-// import RegisterView from "../pages/auth/RegisterView";
+import RegisterView from "../pages/auth/RegisterView";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
     <Route path="/login" element={<LoginView />} />
-    {/* <Route path="/register" element={<RegisterView />} /> */}
+    <Route path="/register" element={<RegisterView />} />
     <Route path="/" element={<ProtectedRoutes />}>
       <Route path="/" element={<App />}>
         <Route index element={<AllCoursesPage />} />
