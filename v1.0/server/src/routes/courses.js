@@ -12,14 +12,15 @@ import { Router } from "express";
 //     getCoursesByUserId,
 //     getCourseStudents,
 // } from "../handlers/courses.js";
-// import { authenticate } from "../middleware/auth.js";
-
+import { authenticate } from "../middleware/authenticate.js";
+import { authorize } from "../middleware/authorize.js";
+import { getCoursesByUserId } from "../handlers/courseHandlers.js";
 const coursesRouter = Router();
 
 // TODO: Add authentication middleware
 // coursesRouter.use(authenticate);
 
-// coursesRouter.get("/", authenticate, getCourses);
+coursesRouter.get("/", authenticate, getCoursesByUserId);
 // coursesRouter.get("/:id", authenticate, getCourseById);
 // coursesRouter.post("/", authenticate, createCourse);
 // coursesRouter.put("/:id", authenticate, updateCourse);

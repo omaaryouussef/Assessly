@@ -1,7 +1,7 @@
 .app-content {
-  margin-left: 74px;
+  margin-left: 65px;
   min-height: 100vh;
-  width: calc(100vw - 74px);
+  width: calc(100vw - 65px);
   box-sizing: border-box;
   padding: 16px 16px 0px;
   display: flex;

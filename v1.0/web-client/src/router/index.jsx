@@ -7,6 +7,7 @@ import {
   Routes,
 } from "react-router-dom";
 import ProtectedRoutes from "../components/auth/ProtectedRoutes";
+import RoleGuard from "../components/auth/RoleGuard";
 import App from "../App";
 import AssessmentFeedbackPage from "../pages/AssessmentFeedbackPage";
 import AccountPage from "../pages/AccountPage";
@@ -39,25 +40,37 @@ const router = createBrowserRouter(
     <Route path="/" element={<ProtectedRoutes />}>
       <Route path="/" element={<App />}>
         <Route index element={<AllCoursesPage />} />
+        {/* Course related routes */}
         <Route path="courses" element={<AllCoursesPage />} />
-        <Route path="assignments" element={<AllAssignmentsPage />} />
-        <Route path="exams" element={<AllExamsPage />} />
-        <Route path="quizzes" element={<AllQuizzesPage />} />
-        <Route path="people" element={<PeoplePage />} />
-        <Route path="feedback" element={<AssessmentFeedbackPage />} />
+        <Route path="course/:courseId/home" element={<CourseHomePage />} />
+        <Route path="course/:courseId/assignments" element={<AllAssignmentsPage />} />
+        <Route path="course/:courseId/exams" element={<AllExamsPage />} />
+        <Route path="course/:courseId/quizzes" element={<AllQuizzesPage />} />
+        <Route path="course/:courseId/people" element={<PeoplePage />} />
+        {/* <Route path="course/:courseId/feedback" element={<AssessmentFeedbackPage />} /> */}
+        
+        {/* Navbar related routes */}
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="account" element={<AccountPage />} />
-        <Route path="add-student" element={<AddStudentPage />} />
-        <Route path="assessment-studio" element={<AssessmentStudioPage />} />
-        <Route path="create-course" element={<CreateCoursePage />} />
-        <Route path="delete-course" element={<DeleteCoursePage />} />
-        <Route path="edit-course" element={<EditCoursePage />} />
-        <Route path="remove-student" element={<RemoveStudentPage />} />
-        <Route path="view-all-students-grade" element={<ViewAllStudentsGradePage />} />
-        <Route path="join-course" element={<JoinCoursePage />} />
-        <Route path="take-assessment" element={<TakeAssessmentPage />} />
-        <Route path="view-grades" element={<ViewGradesPage />} />
+
+        {/* Instructor related routes */}
+        <Route element={<RoleGuard allowedRoles={["INSTRUCTOR"]} />}>
+          <Route path="add-student" element={<AddStudentPage />} />
+          <Route path="course/:courseId/assessment-studio" element={<AssessmentStudioPage />} />
+          <Route path="create-course" element={<CreateCoursePage />} />
+          <Route path="delete-course" element={<DeleteCoursePage />} />
+          <Route path="edit-course" element={<EditCoursePage />} />
+          <Route path="course/:courseId/remove-student" element={<RemoveStudentPage />} />
+          <Route path="course/:courseId/view-all-students-grade" element={<ViewAllStudentsGradePage />} />
+        </Route>
+
+        {/* Student related routes */}
+        <Route element={<RoleGuard allowedRoles={["STUDENT"]} />}>
+          <Route path="join-course" element={<JoinCoursePage />} />
+          <Route path="course/:courseId/take-assessment" element={<TakeAssessmentPage />} />
+          <Route path="course/:courseId/view-grades" element={<ViewGradesPage />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Route>

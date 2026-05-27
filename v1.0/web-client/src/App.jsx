@@ -1,14 +1,16 @@
 import Header from './components/Header'
 import Footer from './components/Footer'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import './App.css'
 
 function App() {
+  const location = useLocation()
+  const withSidebar = location.pathname.includes('course/')
 
   return (
     <>
       <Header />
-      <main className="app-content">
+      <main className={`app-content${withSidebar ? ' app-content--with-sidebar' : ''}`}>
         <section className="app-main-body">
           <Outlet />
         </section>
