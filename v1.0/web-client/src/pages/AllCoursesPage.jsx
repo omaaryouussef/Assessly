@@ -12,6 +12,8 @@ import {
   faBookOpen,
   faKey,
   faClockRotateLeft,
+  faPenToSquare,
+  faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 
 const API_BASE =
@@ -38,10 +40,10 @@ function sortCoursesForDisplay(courses) {
   })
 }
 
-function CourseCard({ course }) {
+function CourseCard({ course, isInstructor }) {
   const navigate = useNavigate()
-  const { setCourseData } = useCourseContext();
-  const { 
+  const { setCourseData } = useCourseContext()
+  const {
     course_id: courseId,
     coursetitle: courseTitle,
     num_enrolled_students: numStudents,
@@ -53,6 +55,21 @@ function CourseCard({ course }) {
     ? { icon: faClockRotateLeft, iconTheme: 'gray' }
     : getCardVisuals(courseId)
 
+  const persistCourseSelection = () => {
+    setCourseData(course)
+    localStorage.setItem('selected_course', JSON.stringify(course))
+  }
+
+  const handleEdit = () => {
+    persistCourseSelection()
+    navigate('/edit-course', { state: { course } })
+  }
+
+  const handleDelete = () => {
+    persistCourseSelection()
+    navigate('/delete-course', { state: { course } })
+  }
+
   return (
     <article
       className={`course-card${isArchived ? ' course-card--archived' : ''}`}
@@ -61,15 +78,36 @@ function CourseCard({ course }) {
         <div className={`course-card-icon course-card-icon--${iconTheme}`}>
           <FontAwesomeIcon icon={icon} />
         </div>
-        <span className="course-card-status">
-          {isArchived ? 'Archived' : 'Active'}
-        </span>
+        <div className="course-card-top-meta">
+          {isInstructor && (
+            <div className="course-card-actions">
+              <button
+                type="button"
+                className="course-card-action-btn"
+                aria-label="Edit course"
+                onClick={handleEdit}
+              >
+                <FontAwesomeIcon icon={faPenToSquare} />
+              </button>
+              <button
+                type="button"
+                className="course-card-action-btn course-card-action-btn--delete"
+                aria-label="Delete course"
+                onClick={handleDelete}
+              >
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
+            </div>
+          )}
+          <span className="course-card-status">
+            {isArchived ? 'Archived' : 'Active'}
+          </span>
+        </div>
       </div>
       <button
-        className='course-button'
+        className="course-button"
         onClick={() => {
-          setCourseData(course);
-          localStorage.setItem('selected_course', JSON.stringify(course))
+          persistCourseSelection()
           navigate(`/course/${courseId}/home`)
         }}
       >
@@ -84,15 +122,15 @@ function CourseCard({ course }) {
           </span>
         </p>
 
-      <div className="course-card-divider" />
+        <div className="course-card-divider" />
 
-      <div className="course-card-section">
-        <p className="course-card-section-label">ENROLLMENT KEY</p>
-        <p className="course-card-enrollment-key">
-          <FontAwesomeIcon icon={faKey} />
-          <span>{enrollmentKey}</span>
-        </p>
-      </div>
+        <div className="course-card-section">
+          <p className="course-card-section-label">ENROLLMENT KEY</p>
+          <p className="course-card-enrollment-key">
+            <FontAwesomeIcon icon={faKey} />
+            <span>{enrollmentKey}</span>
+          </p>
+        </div>
       </button>
     </article>
   )
@@ -139,7 +177,11 @@ function AllCoursesPage() {
       {courseList.length > 0 ? (
         <div className="courses-grid">
           {sortCoursesForDisplay(courseList).map((course) => (
-            <CourseCard key={course.course_id} course={course} />
+            <CourseCard
+              key={course.course_id}
+              course={course}
+              isInstructor={isInstructor}
+            />
           ))}
         </div>
       ) : (

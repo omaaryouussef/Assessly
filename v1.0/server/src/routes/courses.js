@@ -14,7 +14,13 @@ import { Router } from "express";
 // } from "../handlers/courses.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
-import { getCoursesByUserId } from "../handlers/courseHandlers.js";
+import {
+    getCoursesByUserId,
+    createCourse,
+    updateCourse,
+    deleteCourse,
+    joinCourse,
+} from "../handlers/courseHandlers.js";
 const coursesRouter = Router();
 
 // TODO: Add authentication middleware
@@ -22,12 +28,11 @@ const coursesRouter = Router();
 
 coursesRouter.get("/", authenticate, getCoursesByUserId);
 // coursesRouter.get("/:id", authenticate, getCourseById);
-// coursesRouter.post("/", authenticate, createCourse);
-// coursesRouter.put("/:id", authenticate, updateCourse);
-// coursesRouter.delete("/:id", authenticate, deleteCourse);
+coursesRouter.post("/", authenticate, authorize("INSTRUCTOR"), createCourse);
+coursesRouter.put("/:id", authenticate, authorize("INSTRUCTOR"), updateCourse);
+coursesRouter.delete("/:id", authenticate, authorize("INSTRUCTOR"), deleteCourse);
 // coursesRouter.get("/user/:userId", authenticate, getCoursesByUserId);
-
-// coursesRouter.post("/join", authenticate, joinCourse); //self-enroll
+coursesRouter.post("/join", authenticate, authorize("STUDENT"), joinCourse); //self-enroll
 
 // coursesRouter.post("/add", authenticate, addStudenttoCourse);
 // coursesRouter.post("/remove", authenticate, removeStudentfromCourse);
