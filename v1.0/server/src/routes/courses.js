@@ -20,6 +20,9 @@ import {
     updateCourse,
     deleteCourse,
     joinCourse,
+    getPeopleByCourseId,
+    removePersonfromCourse,
+    addStudentToCourse,
 } from "../handlers/courseHandlers.js";
 const coursesRouter = Router();
 
@@ -34,9 +37,8 @@ coursesRouter.delete("/:id", authenticate, authorize("INSTRUCTOR"), deleteCourse
 // coursesRouter.get("/user/:userId", authenticate, getCoursesByUserId);
 coursesRouter.post("/join", authenticate, authorize("STUDENT"), joinCourse); //self-enroll
 
-// coursesRouter.post("/add", authenticate, addStudenttoCourse);
-// coursesRouter.post("/remove", authenticate, removeStudentfromCourse);
-
-// coursesRouter.get("/coursestudents/:courseId", authenticate, getCourseStudents);
+coursesRouter.post("/add/:courseId", authenticate, authorize("INSTRUCTOR"), addStudentToCourse);
+coursesRouter.delete("/remove/:courseId", authenticate, authorize("INSTRUCTOR"), removePersonfromCourse);
+coursesRouter.get("/people/:courseId", authenticate, getPeopleByCourseId);
 
 export default coursesRouter;

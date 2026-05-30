@@ -6,6 +6,37 @@
   --bold-text-color: #0F172A;
   --light-text-color: #64748B;
 }
+
+
+
+/* Universal Components CSS */
+.course-special-header{
+  position: relative;
+  width: 100%;
+  height: 48px;
+  top: -16px;
+  left: -16px;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--bold-text-color);
+  padding: 0px 32px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.course-special-header-icon{
+  font-size: 16px;
+  color: #CBD5E1;
+}
+
+.course-special-header span{
+  font-size: 14px;
+  color: #CBD5E1;
+}
 /* Login Page CSS */
 .login-container {
   min-height: 100vh;
@@ -1296,4 +1327,257 @@
   font-weight: 600;
   padding: 0 16px;
   cursor: pointer;
+}
+
+/* People page */
+.people-page-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.people-list-container {
+  margin-top: 8px;
+  background: #ffffff;
+  border: 1px solid #e8edf3;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.people-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.people-list-icon-header,
+.people-list-icon-cell {
+  width: 56px;
+  padding-left: 20px;
+  padding-right: 8px;
+}
+
+.people-list-actions-header,
+.people-list-actions-cell {
+  width: 56px;
+  padding-left: 8px;
+  padding-right: 20px;
+  text-align: center;
+}
+
+.people-list-table th:nth-child(4),
+.people-list-table td:nth-child(4) {
+  width: 120px;
+}
+
+.people-list-table thead {
+  background: var(--primary-color);
+  border-bottom: 1px solid #e8edf3;
+}
+
+.people-list-table th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: white;
+}
+
+.people-list-table td {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: #334155;
+  border-bottom: 1px solid #eef2f6;
+  vertical-align: middle;
+}
+
+.people-list-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.people-list-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.people-list-icon {
+  font-size: 18px;
+  color: #94a3b8;
+}
+
+.people-list-table td:nth-child(2) {
+  font-weight: 600;
+  color: var(--bold-text-color);
+}
+
+.people-list-table td:nth-child(4) {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.remove-person-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  background: #fff;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.remove-person-button:hover {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.add-student-button {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 20px 20px;
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.add-student-button:hover {
+  background: #144062;
+}
+
+.add-student-button svg {
+  font-size: 12px;
+}
+
+.remove-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.remove-modal {
+  width: min(420px, 92vw);
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8edf3;
+  padding: 22px;
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.2);
+}
+
+.remove-modal h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.remove-modal p {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.remove-modal .error-message {
+  margin-top: 12px;
+}
+
+.remove-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.remove-modal-btn {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.remove-modal-btn--cancel {
+  border: 1px solid #d6dfec;
+  background: #fff;
+  color: #334155;
+}
+
+.remove-modal-btn--confirm {
+  border: 0;
+  background: #dc2626;
+  color: #fff;
+}
+
+.remove-modal-btn--confirm:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.remove-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.people-modal-field {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.people-modal-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #243447;
+}
+
+.people-modal-field input {
+  height: 44px;
+  width: 100%;
+  border: 1px solid #d6dfec;
+  border-radius: 8px;
+  background: #f8fafd;
+  padding: 0 12px;
+  font-size: 14px;
+  color: #334155;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.people-modal-field input:focus {
+  border-color: #135bec;
+  background: #fff;
+}
+
+.remove-modal-btn--confirm-primary {
+  border: 0;
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.remove-modal-btn--confirm-primary:hover:not(:disabled) {
+  background: #144062;
 }
