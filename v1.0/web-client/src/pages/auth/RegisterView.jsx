@@ -118,6 +118,7 @@ function RegisterView() {
               >
                 <option value="INSTRUCTOR">Instructor</option>
                 <option value="STUDENT">Student</option>
+                <option value="TA">TA</option>
               </select>
             </div>
           </div>

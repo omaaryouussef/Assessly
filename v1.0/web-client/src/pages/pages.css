@@ -1,16 +1,14 @@
 /* Global Page CSS */
-:root{
+:root {
   --primary-color: #002137;
   --hover-color: rgba(255, 255, 255, 0.08);
-  --secondary-color: #F8E9D9;
-  --bold-text-color: #0F172A;
-  --light-text-color: #64748B;
+  --secondary-color: #f8e9d9;
+  --bold-text-color: #0f172a;
+  --light-text-color: #64748b;
 }
 
-
-
 /* Universal Components CSS */
-.course-special-header{
+.course-special-header {
   position: relative;
   width: 100%;
   height: 48px;
@@ -25,17 +23,17 @@
   color: var(--bold-text-color);
   padding: 0px 32px;
   background-color: #ffffff;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.course-special-header-icon{
+.course-special-header-icon {
   font-size: 16px;
-  color: #CBD5E1;
+  color: #cbd5e1;
 }
 
-.course-special-header span{
+.course-special-header span {
   font-size: 14px;
-  color: #CBD5E1;
+  color: #cbd5e1;
 }
 /* Login Page CSS */
 .login-container {
@@ -53,12 +51,12 @@
 
 .login-container::before,
 .login-container::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 260px;
   height: 260px;
   border-radius: 50%;
-  background: #135BEC;
+  background: #135bec;
   opacity: 0.14;
   pointer-events: none;
   z-index: 0;
@@ -131,14 +129,13 @@
   padding: 40px;
   box-sizing: border-box;
 }
-.login-form-text{
+.login-form-text {
   margin-bottom: 32px;
-
 }
 
 .login-form-text h3 {
   margin: 0;
-  color: #1E293B;
+  color: #1e293b;
   font-size: 20px;
   font-weight: 700;
 }
@@ -174,9 +171,9 @@
   color: #243447;
 }
 
-.form-group input[type="email"],
-.form-group input[type="password"],
-.form-group input[type="text"] {
+.form-group input[type='email'],
+.form-group input[type='password'],
+.form-group input[type='text'] {
   height: 44px;
   width: 100%;
   border: 1px solid #d6dfec;
@@ -190,9 +187,9 @@
   box-sizing: border-box;
 }
 
-.form-group input[type="email"]::placeholder,
-.form-group input[type="password"]::placeholder,
-.form-group input[type="text"]::placeholder {
+.form-group input[type='email']::placeholder,
+.form-group input[type='password']::placeholder,
+.form-group input[type='text']::placeholder {
   line-height: 44px;
 }
 
@@ -232,11 +229,11 @@
 }
 
 .email-input-wrap::before {
-  content: "\f1fa";
+  content: '\f1fa';
 }
 
 .password-input-wrap::before {
-  content: "\f023";
+  content: '\f023';
 }
 
 .password-input-wrap--toggle input {
@@ -273,15 +270,15 @@
 }
 
 .name-input-wrap::before {
-  content: "\f007";
+  content: '\f007';
 }
 
 .id-input-wrap::before {
-  content: "\f2c2";
+  content: '\f2c2';
 }
 
 .role-input-wrap::before {
-  content: "\f0c0";
+  content: '\f0c0';
 }
 
 .remember-row {
@@ -294,13 +291,13 @@
   cursor: pointer;
 }
 
-.remember-row input[type="checkbox"] {
+.remember-row input[type='checkbox'] {
   width: 16px;
   height: 16px;
   margin: 0;
 }
 
-.login-form-body button[type="submit"] {
+.login-form-body button[type='submit'] {
   height: 44px;
   border: 0;
   border-radius: 8px;
@@ -341,9 +338,9 @@
   font-size: 16px;
 }
 
-.login-form-body button[type="submit"]::after,
+.login-form-body button[type='submit']::after,
 .google-signin-btn::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: rgba(255, 255, 255, 0.12);
@@ -356,7 +353,7 @@
   background: rgba(2, 6, 23, 0.05);
 }
 
-.login-form-body button[type="submit"]:hover::after,
+.login-form-body button[type='submit']:hover::after,
 .google-signin-btn:hover::after {
   opacity: 1;
 }
@@ -378,14 +375,13 @@
 }
 
 .login-form-body .signup-text {
-  border-top: 1px solid #F1F5F9;
+  border-top: 1px solid #f1f5f9;
   padding-top: 16px;
   margin: 0;
   text-align: center;
   color: #566477;
   font-size: 14px;
 }
-
 
 .login-form-body .signup-text a {
   color: blue;
@@ -405,12 +401,12 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  padding: 20px 0px
+  padding: 20px 0px;
 }
 
 .register-container::before,
 .register-container::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 260px;
   height: 260px;
@@ -476,7 +472,7 @@
 }
 
 .register-header::after {
-  content: "Academic Assessment Platform";
+  content: 'Academic Assessment Platform';
   display: block;
   margin-top: 4px;
   color: var(--light-text-color);
@@ -541,7 +537,7 @@
   margin-left: 4px;
 }
 
-.register-form button[type="submit"] {
+.register-form button[type='submit'] {
   height: 44px;
   border: 0;
   border-radius: 8px;
@@ -554,9 +550,9 @@
   overflow: hidden;
 }
 
-.register-form button[type="submit"]::after,
+.register-form button[type='submit']::after,
 .register-form .google-signin-btn::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: rgba(255, 255, 255, 0.12);
@@ -569,7 +565,7 @@
   background: rgba(2, 6, 23, 0.05);
 }
 
-.register-form button[type="submit"]:hover::after,
+.register-form button[type='submit']:hover::after,
 .register-form .google-signin-btn:hover::after {
   opacity: 1;
 }
@@ -620,7 +616,9 @@
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  transition: background 0.2s ease, transform 0.15s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
 }
 
 .courses-page-action-btn:hover {
@@ -684,7 +682,10 @@
   justify-content: center;
   cursor: pointer;
   font-size: 14px;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .course-card-action-btn:hover {
@@ -738,18 +739,17 @@
   padding-top: 4px;
 }
 
-
-.course-button{
+.course-button {
   background-color: transparent;
   border: none;
   text-align: start;
 }
 
-.course-button:hover{
+.course-button:hover {
   cursor: pointer;
 }
 
-.course-card:has(.course-button:hover){
+.course-card:has(.course-button:hover) {
   transform: translateY(-5px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -1068,8 +1068,8 @@
   border-color: #135bec;
 }
 
-.create-course-form input[type="text"],
-.create-course-form input[type="number"] {
+.create-course-form input[type='text'],
+.create-course-form input[type='number'] {
   height: 44px;
   width: 100%;
   border: 1px solid #d6dfec;
@@ -1082,8 +1082,8 @@
   box-sizing: border-box;
 }
 
-.create-course-form input[type="text"]:focus,
-.create-course-form input[type="number"]:focus {
+.create-course-form input[type='text']:focus,
+.create-course-form input[type='number']:focus {
   border-color: #135bec;
 }
 
@@ -1114,13 +1114,13 @@
   padding: 0 16px;
 }
 
-.form-actions button[type="button"] {
+.form-actions button[type='button'] {
   border: 1px solid #d6dfec;
   background: #fff;
   color: #334155;
 }
 
-.form-actions button[type="submit"] {
+.form-actions button[type='submit'] {
   border: 0;
   background: var(--primary-color);
   color: #fff;
@@ -1239,7 +1239,7 @@
   box-sizing: border-box;
 }
 
-.join-course-form input[type="text"] {
+.join-course-form input[type='text'] {
   height: 44px;
   width: 100%;
   border: 1px solid #d6dfec;
@@ -1254,13 +1254,13 @@
   letter-spacing: 0.06em;
 }
 
-.join-course-form input[type="text"]::placeholder {
+.join-course-form input[type='text']::placeholder {
   font-family: inherit;
   letter-spacing: normal;
   color: #94a3b8;
 }
 
-.join-course-form input[type="text"]:focus {
+.join-course-form input[type='text']:focus {
   border-color: #135bec;
   background: #fff;
 }
@@ -1269,7 +1269,7 @@
   margin: 0;
 }
 
-.join-course-form button[type="submit"] {
+.join-course-form button[type='submit'] {
   height: 44px;
   border: 0;
   border-radius: 8px;
@@ -1281,7 +1281,7 @@
   transition: background 0.2s ease;
 }
 
-.join-course-form button[type="submit"]:hover {
+.join-course-form button[type='submit']:hover {
   background: #144062;
 }
 
@@ -1433,7 +1433,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .remove-person-button:hover {
@@ -1442,12 +1445,17 @@
   background: rgba(220, 38, 38, 0.06);
 }
 
+.people-list-button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 16px 20px 20px;
+}
+
 .add-student-button {
-  align-self: flex-end;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin: 16px 20px 20px;
   height: 40px;
   padding: 0 18px;
   border: 0;

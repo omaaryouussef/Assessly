@@ -13,7 +13,6 @@ const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function PeopleRow({ person, isInstructorUser, onRequestRemove }) {
-  const { user } = useAuth()
   const isInstructor = person.role === 'INSTRUCTOR'
 
   return (
@@ -44,9 +43,10 @@ function PeoplePage() {
   const { token, user } = useAuth()
   const { courseId } = useParams()
   const [peopleList, setPeopleList] = useState([])
+  const [taList, setTaList] = useState([])
   const [instructor, setInstructor] = useState(null)
   const [personToRemove, setPersonToRemove] = useState(null)
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [addMode, setAddMode] = useState(null)
   const [aucId, setAucId] = useState('')
   const [removeErrMessage, setRemoveErrMessage] = useState('')
   const [addErrMessage, setAddErrMessage] = useState('')
@@ -66,6 +66,7 @@ function PeoplePage() {
       if (!response.ok) throw new Error('Failed to fetch people.')
       const data = await response.json()
       setPeopleList(data.people ?? [])
+      setTaList(data.tas ?? [])
       setInstructor(data.instructor ?? null)
     } catch (error) {
       console.error('Failed to fetch people.', error)
@@ -92,48 +93,58 @@ function PeoplePage() {
     setRemoveErrMessage('')
     setIsRemoving(true)
 
+    const isTa = personToRemove.role === 'TA'
+    const endpoint = isTa
+      ? `${API_BASE}/api/courses/remove-ta/${courseId}`
+      : `${API_BASE}/api/courses/remove/${courseId}`
+    const body = isTa
+      ? { taId: personToRemove.user_id }
+      : { studentId: personToRemove.user_id }
+
     try {
-      const response = await fetch(
-        `${API_BASE}/api/courses/remove/${courseId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ studentId: personToRemove.user_id }),
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-      )
+        body: JSON.stringify(body),
+      })
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to remove student')
+        throw new Error(
+          data.error ||
+            `Failed to remove ${isTa ? 'TA' : 'student'}`,
+        )
       }
 
       setPersonToRemove(null)
       await fetchPeople()
     } catch (error) {
-      console.error('Failed to remove student', error)
-      setRemoveErrMessage(error.message || 'Failed to remove student')
+      console.error(`Failed to remove ${isTa ? 'TA' : 'student'}`, error)
+      setRemoveErrMessage(
+        error.message || `Failed to remove ${isTa ? 'TA' : 'student'}`,
+      )
     } finally {
       setIsRemoving(false)
     }
   }
 
-  const handleOpenAddModal = () => {
+  const handleOpenAddModal = (mode) => {
     setAddErrMessage('')
     setAucId('')
-    setShowAddModal(true)
+    setAddMode(mode)
   }
 
   const handleCancelAdd = () => {
     setAddErrMessage('')
     setAucId('')
-    setShowAddModal(false)
+    setAddMode(null)
   }
 
   const handleConfirmAdd = async (e) => {
     e.preventDefault()
-    if (!courseId) return
+    if (!courseId || !addMode) return
 
     setAddErrMessage('')
 
@@ -144,8 +155,13 @@ function PeoplePage() {
 
     setIsAdding(true)
 
+    const isTa = addMode === 'ta'
+    const endpoint = isTa
+      ? `${API_BASE}/api/courses/add-ta/${courseId}`
+      : `${API_BASE}/api/courses/add/${courseId}`
+
     try {
-      const response = await fetch(`${API_BASE}/api/courses/add/${courseId}`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -155,21 +171,27 @@ function PeoplePage() {
       })
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to add student')
+        throw new Error(
+          data.error || `Failed to add ${isTa ? 'TA' : 'student'}`,
+        )
       }
 
-      setShowAddModal(false)
+      setAddMode(null)
       setAucId('')
       await fetchPeople()
     } catch (error) {
-      console.error('Failed to add student', error)
-      setAddErrMessage(error.message || 'Failed to add student')
+      console.error(`Failed to add ${isTa ? 'TA' : 'student'}`, error)
+      setAddErrMessage(
+        error.message || `Failed to add ${isTa ? 'TA' : 'student'}`,
+      )
     } finally {
       setIsAdding(false)
     }
   }
 
   const isInstructorUser = user?.role === 'INSTRUCTOR'
+  const removingTa = personToRemove?.role === 'TA'
+  const addingTa = addMode === 'ta'
 
   return (
     <div className="people-page-container">
@@ -201,6 +223,14 @@ function PeoplePage() {
                 onRequestRemove={handleRequestRemove}
               />
             )}
+            {taList.map((person) => (
+              <PeopleRow
+                key={person.user_id}
+                person={person}
+                isInstructorUser={isInstructorUser}
+                onRequestRemove={handleRequestRemove}
+              />
+            ))}
             {peopleList.map((person) => (
               <PeopleRow
                 key={person.user_id}
@@ -212,21 +242,31 @@ function PeoplePage() {
           </tbody>
         </table>
         {isInstructorUser && (
-          <button
-            type="button"
-            className="add-student-button"
-            onClick={handleOpenAddModal}
-          >
-            <FontAwesomeIcon icon={faPlus} />
-            Add Student
-          </button>
+          <div className="people-list-button-row">
+            <button
+              type="button"
+              className="add-student-button"
+              onClick={() => handleOpenAddModal('ta')}
+            >
+              <FontAwesomeIcon icon={faPlus} />
+              Add TA
+            </button>
+            <button
+              type="button"
+              className="add-student-button"
+              onClick={() => handleOpenAddModal('student')}
+            >
+              <FontAwesomeIcon icon={faPlus} />
+              Add Student
+            </button>
+          </div>
         )}
       </div>
 
       {personToRemove && (
         <div className="remove-modal-backdrop">
           <div className="remove-modal">
-            <h2>Remove Student</h2>
+            <h2>Remove {removingTa ? 'TA' : 'Student'}</h2>
             <p>
               Are you sure you want to remove{' '}
               <strong>{personToRemove.name}</strong> from this course?
@@ -256,17 +296,20 @@ function PeoplePage() {
         </div>
       )}
 
-      {showAddModal && (
+      {addMode && (
         <div className="remove-modal-backdrop">
           <div className="remove-modal">
-            <h2>Add Student</h2>
-            <p>Enter the student&apos;s university ID to enroll them in this course.</p>
+            <h2>Add {addingTa ? 'TA' : 'Student'}</h2>
+            <p>
+              Enter the {addingTa ? "TA's" : "student's"} university ID to{' '}
+              {addingTa ? 'assign them to' : 'enroll them in'} this course.
+            </p>
             <form onSubmit={handleConfirmAdd}>
               <div className="people-modal-field">
-                <label htmlFor="student-auc-id">University ID</label>
+                <label htmlFor="person-auc-id">University ID</label>
                 <input
                   type="text"
-                  id="student-auc-id"
+                  id="person-auc-id"
                   name="aucId"
                   placeholder="e.g., 900123456"
                   maxLength={9}
@@ -292,7 +335,9 @@ function PeoplePage() {
                   className="remove-modal-btn remove-modal-btn--confirm-primary"
                   disabled={isAdding}
                 >
-                  {isAdding ? 'Adding...' : 'Add Student'}
+                  {isAdding
+                    ? 'Adding...'
+                    : `Add ${addingTa ? 'TA' : 'Student'}`}
                 </button>
               </div>
             </form>

@@ -5,7 +5,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_U
 
 
 function JoinCoursePage() {
-  const {token} = useAuth();
+  const {token, user} = useAuth();
+  console.log("user: ", user);
   const navigate = useNavigate();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [enrollementKey, setEnrollementKey] = useState('');
@@ -29,6 +30,7 @@ function JoinCoursePage() {
         body: JSON.stringify({enrollementKey})
       });
       const data = await response.json();
+      console.log("data: ", data);  
       if (!response.ok) {
         throw new Error(data.error || 'Failed to join course');
       }

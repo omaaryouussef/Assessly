@@ -1,4 +1,4 @@
-CREATE TYPE role_enum AS ENUM ('INSTRUCTOR' , 'STUDENT', 'ADMIN');
+CREATE TYPE role_enum AS ENUM ('INSTRUCTOR' , 'STUDENT', 'TA', 'ADMIN');
 CREATE TYPE assess_type_enum AS ENUM ('EXAM' , 'QUIZ', 'ASSIGNMENT');
 CREATE TYPE question_type_enum AS ENUM ('CODING' , 'ESSAY', 'MCQ');
 
@@ -21,6 +21,15 @@ CREATE TABLE Course(
     num_student INT NOT NULL,
     IsOpenEnrollement BOOLEAN NOT NULL,
     FOREIGN KEY (instructor_id) REFERENCES Users(user_id)
+);
+
+CREATE TABLE TA_COURSE(
+	id SERIAL NOT NULL,
+    course_id INT NOT NULL,
+    TA_id INT NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (course_id) REFERENCES Course(course_id),
+    FOREIGN KEY (TA_id) REFERENCES Users(user_id)
 );
 
 CREATE TABLE Student_Course

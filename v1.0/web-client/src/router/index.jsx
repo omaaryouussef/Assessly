@@ -54,15 +54,24 @@ const router = createBrowserRouter(
         <Route path="help" element={<HelpPage />} />
         <Route path="account" element={<AccountPage />} />
 
-        {/* Instructor related routes */}
+        {/* Instructor and TA shared routes */}
+        <Route element={<RoleGuard allowedRoles={["INSTRUCTOR", "TA"]} />}>
+          <Route path="course/:courseId/assessment-studio" element={<AssessmentStudioPage />} />
+          <Route path="course/:courseId/view-all-students-grade" element={<ViewAllStudentsGradePage />} />
+        </Route>
+
+        {/* Instructor only routes */}
         <Route element={<RoleGuard allowedRoles={["INSTRUCTOR"]} />}>
           <Route path="add-student" element={<AddStudentPage />} />
-          <Route path="course/:courseId/assessment-studio" element={<AssessmentStudioPage />} />
           <Route path="create-course" element={<CreateCoursePage />} />
           <Route path="delete-course" element={<DeleteCoursePage />} />
           <Route path="edit-course" element={<EditCoursePage />} />
           <Route path="course/:courseId/remove-student" element={<RemoveStudentPage />} />
-          <Route path="course/:courseId/view-all-students-grade" element={<ViewAllStudentsGradePage />} />
+        </Route>
+
+        {/* TA related routes */}
+        <Route element={<RoleGuard allowedRoles={["TA"]} />}>
+          <Route path="join-course" element={<JoinCoursePage />} />
         </Route>
 
         {/* Student related routes */}

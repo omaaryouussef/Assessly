@@ -21,8 +21,10 @@ import {
     deleteCourse,
     joinCourse,
     getPeopleByCourseId,
-    removePersonfromCourse,
+    removeStudentfromCourse,
     addStudentToCourse,
+    addTaToCourse,
+    removeTaFromCourse,
 } from "../handlers/courseHandlers.js";
 const coursesRouter = Router();
 
@@ -35,10 +37,12 @@ coursesRouter.post("/", authenticate, authorize("INSTRUCTOR"), createCourse);
 coursesRouter.put("/:id", authenticate, authorize("INSTRUCTOR"), updateCourse);
 coursesRouter.delete("/:id", authenticate, authorize("INSTRUCTOR"), deleteCourse);
 // coursesRouter.get("/user/:userId", authenticate, getCoursesByUserId);
-coursesRouter.post("/join", authenticate, authorize("STUDENT"), joinCourse); //self-enroll
+coursesRouter.post("/join", authenticate, authorize("STUDENT", "TA"), joinCourse); //self-enroll
 
 coursesRouter.post("/add/:courseId", authenticate, authorize("INSTRUCTOR"), addStudentToCourse);
-coursesRouter.delete("/remove/:courseId", authenticate, authorize("INSTRUCTOR"), removePersonfromCourse);
+coursesRouter.post("/add-ta/:courseId", authenticate, authorize("INSTRUCTOR"), addTaToCourse);
+coursesRouter.delete("/remove/:courseId", authenticate, authorize("INSTRUCTOR"), removeStudentfromCourse);
+coursesRouter.delete("/remove-ta/:courseId", authenticate, authorize("INSTRUCTOR"), removeTaFromCourse);
 coursesRouter.get("/people/:courseId", authenticate, getPeopleByCourseId);
 
 export default coursesRouter;

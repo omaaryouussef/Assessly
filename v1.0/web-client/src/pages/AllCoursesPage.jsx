@@ -154,6 +154,7 @@ function AllCoursesPage() {
     fetchCourses()
   }, [])
   const isInstructor = user?.role === 'INSTRUCTOR'
+  const isTa = user?.role === 'TA'
   const actionPath = isInstructor ? '/create-course' : '/join-course'
   const actionLabel = isInstructor ? 'Create Course' : 'Join Course'
 
@@ -163,7 +164,7 @@ function AllCoursesPage() {
         <div className="courses-page-header-text">
           <h1 className="courses-page-title">Courses</h1>
           <p className="courses-page-subtitle">
-            Manage your active curriculum and student assessments.
+            {isTa || isInstructor ? 'Manage your active curriculum and student assessments.' : 'View your active courses and manage your assessments.'}
           </p>
         </div>
         {courseList.length !== 0 && (
