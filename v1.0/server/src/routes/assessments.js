@@ -1,18 +1,30 @@
 import { Router } from "express";
-// import { createExam, deleteExam, getExamById, getExams, getExamsByCourseId, updateExam } from "../handlers/exams.js"; // Ensure the path matches your project structure
-// import { authenticate } from "../middleware/auth.js";
+import { authenticate } from "../middleware/authenticate.js";
+import {
+  getAssignmentsByCourseId,
+  getQuizzesByCourseId,
+  getExamsByCourseId,
+  toggleAssessmentPublish,
+  toggleAssessmentClose,
+} from "../handlers/assessmentHandlers.js";
+import { authorize } from "../middleware/authorize.js";
 
 const assessmentsRouter = Router();
 
-// Authentication middleware for protected routes
-//assessmentsRouter.use(authenticate); // Apply to all routes if authentication is required
-
-// Routes
-// assessmentsRouter.get("/", getExams); // Fetch all exams
-// assessmentsRouter.get("/:id", getExamById); // Fetch a single exam by ID
-// assessmentsRouter.get("/course/:courseId", getExamsByCourseId); // Fetch exams by course ID
-// assessmentsRouter.post("/", createExam); // Create a new exam (protected)
-// assessmentsRouter.put("/:id", updateExam); // Update an exam by ID (protected)
-// assessmentsRouter.delete("/:id", deleteExam); // Delete an exam by ID (protected)
+assessmentsRouter.get("/assignments/:courseId", authenticate, getAssignmentsByCourseId);
+assessmentsRouter.get("/quizzes/:courseId", authenticate, getQuizzesByCourseId);
+assessmentsRouter.get("/exams/:courseId", authenticate, getExamsByCourseId);
+assessmentsRouter.patch(
+  "/:assessmentId/publish",
+  authenticate,
+  authorize("INSTRUCTOR", "TA"),
+  toggleAssessmentPublish,
+);
+assessmentsRouter.patch(
+  "/:assessmentId/close",
+  authenticate,
+  authorize("INSTRUCTOR", "TA"),
+  toggleAssessmentClose,
+);
 
 export default assessmentsRouter;

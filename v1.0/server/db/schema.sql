@@ -49,6 +49,8 @@ CREATE TABLE Assessment
     title VARCHAR(50) NOT NULL,
     duration INT NOT NULL,
     max_grade FLOAT NOT NULL,
+    is_published BOOLEAN NOT NULL DEFAULT false,
+    is_closed BOOLEAN NOT NULL DEFAULT false,
     course_id INT NOT NULL,
     PRIMARY KEY (assessment_id),
     FOREIGN KEY (course_id) REFERENCES Course(course_id)
@@ -115,3 +117,13 @@ CREATE TABLE choice
     PRIMARY KEY (choice_id),
     FOREIGN KEY (question_id) REFERENCES Question(question_id)
 );
+
+
+CREATE TABLE student_access_assessments(
+id SERIAL NOT NULL PRIMARY KEY,
+can_access BOOLEAN NOT NULL,
+student_id INT NOT NULL,
+assessment_id INT NOT NULL,
+FOREIGN KEY (student_id) REFERENCES users(user_id),
+FOREIGN KEY (assessment_id) REFERENCES assessment(assessment_id)
+)
