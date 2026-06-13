@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faClipboardList,
@@ -9,6 +9,8 @@ import {
   faFileLines,
   faTerminal,
   faCalendarDays,
+  faPen,
+  faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../components/auth/AuthWrapper'
@@ -22,10 +24,24 @@ const ASSIGNMENT_ICONS = {
   MCQ: faTerminal,
 }
 
-function AssignmentRow({ assignment, canManage, onPublishClick, isPublishing, currentDateTime }) {
+function AssignmentRow({
+  assignment,
+  canManage,
+  onPublishClick,
+  isPublishing,
+  currentDateTime,
+  setShowEditModal,
+  setShowDeleteModal,
+  setAssignmentToEdit,
+  setAssignmentToDelete,
+}) {
   const icon = ASSIGNMENT_ICONS[assignment.question_type] ?? faFile
-  const dueDate = assignment.due_date ? new Date(assignment.due_date).toLocaleDateString() : '';
-  const dueTime = assignment.due_date ? new Date(assignment.due_date).toLocaleTimeString() : '';
+  const dueDate = assignment.due_date
+    ? new Date(assignment.due_date).toLocaleDateString()
+    : ''
+  const dueTime = assignment.due_date
+    ? new Date(assignment.due_date).toLocaleTimeString()
+    : ''
   const isPastDue = currentDateTime > new Date(assignment.due_date)
   return (
     <div className="assignment-row">
@@ -39,11 +55,29 @@ function AssignmentRow({ assignment, canManage, onPublishClick, isPublishing, cu
             icon={faCalendarDays}
             className="assignment-meta-icon"
           />
-          {assignment.due_date
-            ? `Due ${dueDate} ${dueTime} | `
-            : ''}
+          {assignment.due_date ? `Due ${dueDate} ${dueTime} | ` : ''}
           {assignment.max_grade} pts
         </p>
+        <button
+          type="button"
+          className="assignment-row-action-btn"
+          onClick={() => {
+            setShowEditModal(true)
+            setAssignmentToEdit(assignment)
+          }}
+        >
+          <FontAwesomeIcon icon={faPen} />
+        </button>
+        <button
+          type="button"
+          className="assignment-row-action-btn"
+          onClick={() => {
+            setShowDeleteModal(true)
+            setAssignmentToDelete(assignment)
+          }}
+        >
+          <FontAwesomeIcon icon={faTrash} />
+        </button>
       </div>
       <div className="assignment-row-actions">
         <span
@@ -82,6 +116,7 @@ function AssignmentRow({ assignment, canManage, onPublishClick, isPublishing, cu
 }
 
 function AllAssignmentsPage() {
+  const navigate = useNavigate()
   const { courseId } = useParams()
   const { user, token } = useAuth()
   const [assignmentsList, setAssignmentsList] = useState([])
@@ -89,6 +124,11 @@ function AllAssignmentsPage() {
   const [assignmentToPublish, setAssignmentToPublish] = useState(null)
   const [publishErrMessage, setPublishErrMessage] = useState('')
   const [currentDateTime, setCurrentDateTime] = useState(new Date())
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [assignmentToEdit, setAssignmentToEdit] = useState(null)
+  const [assignmentToDelete, setAssignmentToDelete] = useState(null)
+  const [deleteErrMessage, setDeleteErrMessage] = useState('')
   const canManage = user?.role === 'INSTRUCTOR' || user?.role === 'TA'
 
   const fetchAssignments = async () => {
@@ -96,7 +136,7 @@ function AllAssignmentsPage() {
       `${API_BASE}/api/assessments/assignments/${courseId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     )
     if (!response.ok) throw new Error('Failed to fetch assignments')
     const data = await response.json()
@@ -126,7 +166,7 @@ function AllAssignmentsPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ is_published: nextPublished }),
-        },
+        }
       )
       const data = await response.json()
       if (!response.ok) {
@@ -135,8 +175,8 @@ function AllAssignmentsPage() {
 
       setAssignmentsList((prev) =>
         prev.map((item) =>
-          item.assessment_id === assessmentId ? { ...item, ...data } : item,
-        ),
+          item.assessment_id === assessmentId ? { ...item, ...data } : item
+        )
       )
       setAssignmentToPublish(null)
     } catch (error) {
@@ -165,6 +205,33 @@ function AllAssignmentsPage() {
   const handleConfirmPublish = () => {
     if (!assignmentToPublish) return
     updatePublishState(assignmentToPublish.assessment_id, true)
+  }
+  
+
+  const handleConfirmEdit = () => {
+    if (!assignmentToEdit) return
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!assignmentToDelete) return
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/assessments/${assignmentToDelete.assessment_id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      if (!response.ok) throw new Error('Failed to delete assignment')
+      const data = await response.json()
+      setAssignmentsList((prev) =>
+        prev.filter((assignment) => assignment.assessment_id !== assignmentToDelete.assessment_id)
+      )
+      setAssignmentToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete assignment', error)
+      setDeleteErrMessage(error.message || 'Failed to delete assignment')
+    }
   }
   return (
     <div className="assignments-page-container">
@@ -200,6 +267,10 @@ function AllAssignmentsPage() {
                 onPublishClick={handlePublishClick}
                 isPublishing={publishingId === assignment.assessment_id}
                 currentDateTime={currentDateTime}
+                setShowEditModal={setShowEditModal}
+                setShowDeleteModal={setShowDeleteModal}
+                setAssignmentToEdit={setAssignmentToEdit}
+                setAssignmentToDelete={setAssignmentToDelete}
               />
             ))}
         </div>
@@ -240,6 +311,64 @@ function AllAssignmentsPage() {
                 {publishingId === assignmentToPublish.assessment_id
                   ? 'Publishing...'
                   : 'Publish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="remove-modal-backdrop">
+          <div className="remove-modal">
+            <h2>Edit Assignment</h2>
+            <p>
+              Are you sure you want to edit{' '}
+              <strong>{assignmentToEdit.title}</strong>?
+            </p>
+            <div className="remove-modal-actions">
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--cancel"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--confirm-primary"
+                onClick={() => navigate(`/course/${courseId}/assessment-studio`)}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteModal && (
+        <div className="remove-modal-backdrop">
+          <div className="remove-modal">
+            <h2>Delete Assignment</h2>
+            <p>
+              Are you sure you want to delete{' '}
+              <strong>{assignmentToDelete.title}</strong>?
+            </p>
+            {deleteErrMessage && (
+              <p className="error-message">{deleteErrMessage}</p>
+            )}
+            <div className="remove-modal-actions">
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--cancel"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--confirm-primary"
+                onClick={handleConfirmDelete}
+              >
+                Delete Assignment
               </button>
             </div>
           </div>

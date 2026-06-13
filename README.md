@@ -28,7 +28,7 @@ Assessly/
 │       └── src/
 │           ├── handlers/    # Route handlers
 │           ├── middleware/  # authenticate, authorize (roles)
-│           └── routes/      # users, courses, assessments
+|           └── routes/      # users, courses, assessments
 └── README.md
 ```
 

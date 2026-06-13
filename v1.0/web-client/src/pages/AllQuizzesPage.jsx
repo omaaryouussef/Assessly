@@ -69,13 +69,16 @@ function QuizRow({
               onClick={() => onPublishClick(quiz)}
               disabled={isPublishing || isClosing}
             >
+              {/* I will come back here to let the instructor publish the quiz to late sutdents */}
               {isPublishing
                 ? 'Saving...'
                 : quiz.is_published
                   ? 'Unpublish'
                   : 'Publish'}
             </button>
-            {quiz.is_closed ? (
+            {quiz.is_published && (
+              <>
+              {quiz.is_closed ? (
               <button
                 type="button"
                 className="quiz-close-btn quiz-close-btn--reopen"
@@ -93,6 +96,8 @@ function QuizRow({
               >
                 Close Quiz
               </button>
+            )}
+              </>
             )}
           </>
         ) : (
@@ -308,6 +313,7 @@ function AllQuizzesPage() {
       }
       return next
     })
+    console.log(selectedStudentIds);
   }
 
   const handleToggleAllStudents = () => {

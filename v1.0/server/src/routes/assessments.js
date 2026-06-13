@@ -6,6 +6,7 @@ import {
   getExamsByCourseId,
   toggleAssessmentPublish,
   toggleAssessmentClose,
+  deleteAssessment,
 } from "../handlers/assessmentHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
@@ -26,5 +27,6 @@ assessmentsRouter.patch(
   authorize("INSTRUCTOR", "TA"),
   toggleAssessmentClose,
 );
+assessmentsRouter.delete("/:assessmentId", authenticate, authorize("INSTRUCTOR", "TA"), deleteAssessment);
 
 export default assessmentsRouter;

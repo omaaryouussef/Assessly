@@ -325,3 +325,30 @@ export const toggleAssessmentClose = async (req, res) => {
 };
 
 export const toggleQuizClose = toggleAssessmentClose;
+
+export const deleteAssessment = async (req, res) => {
+  const { assessmentId } = req.params;
+  const { user_id: userId, role } = req.user;
+  if (role !== "INSTRUCTOR" && role !== "TA") {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    const assessment = await db.query(
+      "SELECT * FROM assessment WHERE assessment_id = $1",
+      [assessmentId],
+    );
+    if (assessment.rows.length === 0) {
+      return res.status(404).json({ error: "Assessment not found" });
+    }
+    const row = assessment.rows[0];
+    const allowed = await canManageCourse(row.course_id, userId, role);
+    if (!allowed) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    await db.query("DELETE FROM assessment WHERE assessment_id = $1", [assessmentId]);
+    return res.status(200).json({ message: "Assessment deleted successfully" });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to delete assessment" });
+  }
+};

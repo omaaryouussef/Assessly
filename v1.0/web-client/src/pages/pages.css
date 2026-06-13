@@ -1688,6 +1688,50 @@
   color: #94a3b8;
 }
 
+.assignment-row-action-btn {
+  width: 32px;
+  height: 32px;
+  margin-top: 10px;
+  margin-right: 8px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  vertical-align: middle;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.assignment-row-action-btn:last-of-type {
+  margin-right: 0;
+}
+
+.assignment-row-action-btn:hover {
+  color: var(--primary-color);
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.assignment-row-action-btn--delete:hover,
+.assignment-row-body > .assignment-row-action-btn:last-of-type:hover {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.assignment-row-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .assignment-row-actions {
   flex-shrink: 0;
   display: flex;
