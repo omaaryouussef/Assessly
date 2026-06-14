@@ -399,6 +399,7 @@ function AllQuizzesPage() {
         prev.filter((quiz) => quiz.assessment_id !== quizToDelete.assessment_id)
       )
       setQuizToDelete(null)
+      setShowDeleteModal(false)
     } catch (error) {
       console.error('Failed to delete quiz', error)
       setActionErrMessage(error.message || 'Failed to delete quiz')

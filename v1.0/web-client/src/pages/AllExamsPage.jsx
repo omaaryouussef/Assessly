@@ -9,6 +9,8 @@ import {
   faFileLines,
   faTerminal,
   faClock,
+  faPen,
+  faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
 
@@ -29,6 +31,10 @@ function ExamRow({
   onReopenClick,
   isPublishing,
   isClosing,
+  setShowEditModal,
+  setShowDeleteModal,
+  setExamToEdit,
+  setExamToDelete,
 }) {
   const icon = EXAM_ICONS[exam.question_type] ?? faFile
 
@@ -43,6 +49,32 @@ function ExamRow({
           <FontAwesomeIcon icon={faClock} className="assignment-meta-icon" />
           {exam.duration} min | {exam.max_grade} pts
         </p>
+        {canManage && (
+          <div className="assignment-row-action-buttons">
+            <button
+              type="button"
+              className="assignment-row-action-btn assignment-row-action-btn--edit"
+              aria-label={`Edit ${exam.title}`}
+              onClick={() => {
+                setShowEditModal(true)
+                setExamToEdit(exam)
+              }}
+            >
+              <FontAwesomeIcon icon={faPen} />
+            </button>
+            <button
+              type="button"
+              className="assignment-row-action-btn assignment-row-action-btn--delete"
+              aria-label={`Delete ${exam.title}`}
+              onClick={() => {
+                setShowDeleteModal(true)
+                setExamToDelete(exam)
+              }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </div>
+        )}
       </div>
       <div className="assignment-row-actions">
         {canManage ? (
@@ -130,6 +162,10 @@ function AllExamsPage() {
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set())
   const [isLoadingStudents, setIsLoadingStudents] = useState(false)
   const [actionErrMessage, setActionErrMessage] = useState('')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [examToEdit, setExamToEdit] = useState(null)
+  const [examToDelete, setExamToDelete] = useState(null)
   const canManage = user?.role === 'INSTRUCTOR' || user?.role === 'TA'
 
   const fetchExams = useCallback(async () => {
@@ -137,7 +173,7 @@ function AllExamsPage() {
       `${API_BASE}/api/assessments/exams/${courseId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     )
     if (!response.ok) throw new Error('Failed to fetch exams')
     const data = await response.json()
@@ -151,12 +187,12 @@ function AllExamsPage() {
         `${API_BASE}/api/courses/people/${courseId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       )
       if (!response.ok) throw new Error('Failed to fetch students')
       const data = await response.json()
       const students = (data.people ?? []).filter(
-        (person) => person.role === 'STUDENT',
+        (person) => person.role === 'STUDENT'
       )
       setStudentsList(students)
       setSelectedStudentIds(new Set(students.map((student) => student.user_id)))
@@ -183,8 +219,8 @@ function AllExamsPage() {
       prev.map((item) =>
         item.assessment_id === updatedExam.assessment_id
           ? { ...item, ...updatedExam }
-          : item,
-      ),
+          : item
+      )
     )
   }
 
@@ -210,7 +246,7 @@ function AllExamsPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(body),
-        },
+        }
       )
       const data = await response.json()
       if (!response.ok) {
@@ -241,7 +277,7 @@ function AllExamsPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ is_closed: isClosed }),
-        },
+        }
       )
       const data = await response.json()
       if (!response.ok) {
@@ -315,7 +351,9 @@ function AllExamsPage() {
       setSelectedStudentIds(new Set())
       return
     }
-    setSelectedStudentIds(new Set(studentsList.map((student) => student.user_id)))
+    setSelectedStudentIds(
+      new Set(studentsList.map((student) => student.user_id))
+    )
   }
 
   const handleCloseClick = (exam) => {
@@ -334,6 +372,33 @@ function AllExamsPage() {
 
   const allStudentsSelected =
     studentsList.length > 0 && selectedStudentIds.size === studentsList.length
+
+  const handleConfirmEdit = () => {
+    if (!examToEdit) return
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!examToDelete) return
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/assessments/${examToDelete.assessment_id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      if (!response.ok) throw new Error('Failed to delete exam')
+      const data = await response.json()
+      setExamsList((prev) =>
+        prev.filter((exam) => exam.assessment_id !== examToDelete.assessment_id)
+      )
+      setExamToDelete(null)
+      setShowDeleteModal(false)
+    } catch (error) {
+      console.error('Failed to delete exam', error)
+      setActionErrMessage(error.message || 'Failed to delete exam')
+    }
+  }
 
   return (
     <div className="assignments-page-container">
@@ -369,6 +434,10 @@ function AllExamsPage() {
               onReopenClick={handleReopenClick}
               isPublishing={publishingId === exam.assessment_id}
               isClosing={closingId === exam.assessment_id}
+              setShowEditModal={setShowEditModal}
+              setShowDeleteModal={setShowDeleteModal}
+              setExamToEdit={setExamToEdit}
+              setExamToDelete={setExamToDelete}
             />
           ))}
         </div>
@@ -484,7 +553,9 @@ function AllExamsPage() {
                         checked={selectedStudentIds.has(student.user_id)}
                         onChange={() => handleToggleStudent(student.user_id)}
                       />
-                      <span className="publish-student-name">{student.name}</span>
+                      <span className="publish-student-name">
+                        {student.name}
+                      </span>
                       <span className="publish-student-email">
                         {student.email}
                       </span>
@@ -560,6 +631,61 @@ function AllExamsPage() {
                 {closingId === examToClose.assessment_id
                   ? 'Closing...'
                   : 'Close Exam'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && examToEdit && canManage && (
+        <div className="remove-modal-backdrop">
+          <div className="remove-modal">
+            <h2>Edit Exam</h2>
+            <p>
+              Are you sure you want to edit <strong>{examToEdit.title}</strong>?
+            </p>
+            <div className="remove-modal-actions">
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--cancel"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+            <button
+              type="button"
+              className="remove-modal-btn remove-modal-btn--confirm-primary"
+              onClick={handleConfirmEdit}
+            >
+              Edit Exam
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && examToDelete && canManage && (
+        <div className="remove-modal-backdrop">
+          <div className="remove-modal">
+            <h2>Delete Exam</h2>
+            <p>
+              Are you sure you want to delete{' '}
+              <strong>{examToDelete.title}</strong>?
+            </p>
+            <div className="remove-modal-actions">
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--cancel"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--confirm-primary"
+                onClick={handleConfirmDelete}
+              >
+                Delete Exam
               </button>
             </div>
           </div>
