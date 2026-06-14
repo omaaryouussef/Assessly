@@ -58,26 +58,30 @@ function AssignmentRow({
           {assignment.due_date ? `Due ${dueDate} ${dueTime} | ` : ''}
           {assignment.max_grade} pts
         </p>
-        <button
-          type="button"
-          className="assignment-row-action-btn"
-          onClick={() => {
-            setShowEditModal(true)
-            setAssignmentToEdit(assignment)
-          }}
-        >
-          <FontAwesomeIcon icon={faPen} />
-        </button>
-        <button
-          type="button"
-          className="assignment-row-action-btn"
-          onClick={() => {
-            setShowDeleteModal(true)
-            setAssignmentToDelete(assignment)
-          }}
-        >
-          <FontAwesomeIcon icon={faTrash} />
-        </button>
+        {canManage && (
+          <div className="assignment-row-action-buttons">
+            <button
+              type="button"
+              className="assignment-row-action-btn"
+              onClick={() => {
+                setShowEditModal(true)
+                setAssignmentToEdit(assignment)
+              }}
+            >
+              <FontAwesomeIcon icon={faPen} />
+            </button>
+            <button
+              type="button"
+              className="assignment-row-action-btn"
+              onClick={() => {
+                setShowDeleteModal(true)
+                setAssignmentToDelete(assignment)
+              }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </div>
+        )}
       </div>
       <div className="assignment-row-actions">
         <span
@@ -206,7 +210,7 @@ function AllAssignmentsPage() {
     if (!assignmentToPublish) return
     updatePublishState(assignmentToPublish.assessment_id, true)
   }
-  
+
   // to do: handle the editing in the assessment studio after I finish it.
   const handleConfirmEdit = () => {
     if (!assignmentToEdit) return
@@ -225,7 +229,10 @@ function AllAssignmentsPage() {
       if (!response.ok) throw new Error('Failed to delete assignment')
       const data = await response.json()
       setAssignmentsList((prev) =>
-        prev.filter((assignment) => assignment.assessment_id !== assignmentToDelete.assessment_id)
+        prev.filter(
+          (assignment) =>
+            assignment.assessment_id !== assignmentToDelete.assessment_id
+        )
       )
       setAssignmentToDelete(null)
     } catch (error) {
@@ -317,7 +324,7 @@ function AllAssignmentsPage() {
         </div>
       )}
 
-      {showEditModal && (
+      {showEditModal && assignmentToEdit && canManage && (
         <div className="remove-modal-backdrop">
           <div className="remove-modal">
             <h2>Edit Assignment</h2>
@@ -336,7 +343,9 @@ function AllAssignmentsPage() {
               <button
                 type="button"
                 className="remove-modal-btn remove-modal-btn--confirm-primary"
-                onClick={() => navigate(`/course/${courseId}/assessment-studio`)}
+                onClick={() =>
+                  navigate(`/course/${courseId}/assessment-studio`)
+                }
               >
                 Yes
               </button>
@@ -344,7 +353,7 @@ function AllAssignmentsPage() {
           </div>
         </div>
       )}
-      {showDeleteModal && (
+      {showDeleteModal && assignmentToDelete && canManage && (
         <div className="remove-modal-backdrop">
           <div className="remove-modal">
             <h2>Delete Assignment</h2>

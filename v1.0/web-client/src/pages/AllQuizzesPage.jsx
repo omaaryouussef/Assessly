@@ -9,6 +9,8 @@ import {
   faFileLines,
   faTerminal,
   faClock,
+  faPen,
+  faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
 
@@ -29,6 +31,10 @@ function QuizRow({
   onReopenClick,
   isPublishing,
   isClosing,
+  setShowEditModal,
+  setShowDeleteModal,
+  setQuizToEdit,
+  setQuizToDelete,
 }) {
   const icon = QUIZ_ICONS[quiz.question_type] ?? faFile
 
@@ -43,6 +49,32 @@ function QuizRow({
           <FontAwesomeIcon icon={faClock} className="assignment-meta-icon" />
           {quiz.duration} min | {quiz.max_grade} pts
         </p>
+        {canManage && (
+          <div className="assignment-row-action-buttons">
+            <button
+              type="button"
+              className="assignment-row-action-btn assignment-row-action-btn--edit"
+              aria-label={`Edit ${quiz.title}`}
+              onClick={() => {
+                setShowEditModal(true)
+                setQuizToEdit(quiz)
+              }}
+            >
+              <FontAwesomeIcon icon={faPen} />
+            </button>
+            <button
+              type="button"
+              className="assignment-row-action-btn assignment-row-action-btn--delete"
+              aria-label={`Delete ${quiz.title}`}
+              onClick={() => {
+                setShowDeleteModal(true)
+                setQuizToDelete(quiz)
+              }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </div>
+        )}
       </div>
       <div className="assignment-row-actions">
         {canManage ? (
@@ -78,25 +110,25 @@ function QuizRow({
             </button>
             {quiz.is_published && (
               <>
-              {quiz.is_closed ? (
-              <button
-                type="button"
-                className="quiz-close-btn quiz-close-btn--reopen"
-                onClick={() => onReopenClick(quiz)}
-                disabled={isPublishing || isClosing}
-              >
-                {isClosing ? 'Saving...' : 'Reopen Quiz'}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="quiz-close-btn"
-                onClick={() => onCloseClick(quiz)}
-                disabled={isPublishing || isClosing || !quiz.is_published}
-              >
-                Close Quiz
-              </button>
-            )}
+                {quiz.is_closed ? (
+                  <button
+                    type="button"
+                    className="quiz-close-btn quiz-close-btn--reopen"
+                    onClick={() => onReopenClick(quiz)}
+                    disabled={isPublishing || isClosing}
+                  >
+                    {isClosing ? 'Saving...' : 'Reopen Quiz'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="quiz-close-btn"
+                    onClick={() => onCloseClick(quiz)}
+                    disabled={isPublishing || isClosing || !quiz.is_published}
+                  >
+                    Close Quiz
+                  </button>
+                )}
               </>
             )}
           </>
@@ -135,6 +167,10 @@ function AllQuizzesPage() {
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set())
   const [isLoadingStudents, setIsLoadingStudents] = useState(false)
   const [actionErrMessage, setActionErrMessage] = useState('')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [quizToEdit, setQuizToEdit] = useState(null)
+  const [quizToDelete, setQuizToDelete] = useState(null)
   const canManage = user?.role === 'INSTRUCTOR' || user?.role === 'TA'
 
   const fetchQuizzes = useCallback(async () => {
@@ -142,7 +178,7 @@ function AllQuizzesPage() {
       `${API_BASE}/api/assessments/quizzes/${courseId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     )
     if (!response.ok) throw new Error('Failed to fetch quizzes')
     const data = await response.json()
@@ -156,12 +192,12 @@ function AllQuizzesPage() {
         `${API_BASE}/api/courses/people/${courseId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       )
       if (!response.ok) throw new Error('Failed to fetch students')
       const data = await response.json()
       const students = (data.people ?? []).filter(
-        (person) => person.role === 'STUDENT',
+        (person) => person.role === 'STUDENT'
       )
       setStudentsList(students)
       setSelectedStudentIds(new Set(students.map((student) => student.user_id)))
@@ -188,8 +224,8 @@ function AllQuizzesPage() {
       prev.map((item) =>
         item.assessment_id === updatedQuiz.assessment_id
           ? { ...item, ...updatedQuiz }
-          : item,
-      ),
+          : item
+      )
     )
   }
 
@@ -215,7 +251,7 @@ function AllQuizzesPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(body),
-        },
+        }
       )
       const data = await response.json()
       if (!response.ok) {
@@ -246,7 +282,7 @@ function AllQuizzesPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ is_closed: isClosed }),
-        },
+        }
       )
       const data = await response.json()
       if (!response.ok) {
@@ -313,7 +349,7 @@ function AllQuizzesPage() {
       }
       return next
     })
-    console.log(selectedStudentIds);
+    console.log(selectedStudentIds)
   }
 
   const handleToggleAllStudents = () => {
@@ -321,7 +357,9 @@ function AllQuizzesPage() {
       setSelectedStudentIds(new Set())
       return
     }
-    setSelectedStudentIds(new Set(studentsList.map((student) => student.user_id)))
+    setSelectedStudentIds(
+      new Set(studentsList.map((student) => student.user_id))
+    )
   }
 
   const handleCloseClick = (quiz) => {
@@ -341,6 +379,31 @@ function AllQuizzesPage() {
   const allStudentsSelected =
     studentsList.length > 0 && selectedStudentIds.size === studentsList.length
 
+  const handleConfirmEdit = () => {
+    if (!quizToEdit) return
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!quizToDelete) return
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/assessments/${quizToDelete.assessment_id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      if (!response.ok) throw new Error('Failed to delete quiz')
+      const data = await response.json()
+      setQuizzesList((prev) =>
+        prev.filter((quiz) => quiz.assessment_id !== quizToDelete.assessment_id)
+      )
+      setQuizToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete quiz', error)
+      setActionErrMessage(error.message || 'Failed to delete quiz')
+    }
+  }
   return (
     <div className="assignments-page-container">
       <div className="course-special-header">
@@ -375,6 +438,10 @@ function AllQuizzesPage() {
               onReopenClick={handleReopenClick}
               isPublishing={publishingId === quiz.assessment_id}
               isClosing={closingId === quiz.assessment_id}
+              setShowEditModal={setShowEditModal}
+              setShowDeleteModal={setShowDeleteModal}
+              setQuizToEdit={setQuizToEdit}
+              setQuizToDelete={setQuizToDelete}
             />
           ))}
         </div>
@@ -490,7 +557,9 @@ function AllQuizzesPage() {
                         checked={selectedStudentIds.has(student.user_id)}
                         onChange={() => handleToggleStudent(student.user_id)}
                       />
-                      <span className="publish-student-name">{student.name}</span>
+                      <span className="publish-student-name">
+                        {student.name}
+                      </span>
                       <span className="publish-student-email">
                         {student.email}
                       </span>
@@ -566,6 +635,66 @@ function AllQuizzesPage() {
                 {closingId === quizToClose.assessment_id
                   ? 'Closing...'
                   : 'Close Quiz'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && quizToEdit && canManage && (
+        <div className="remove-modal-backdrop">
+          <div className="remove-modal">
+            <h2>Edit Quiz</h2>
+            <p>
+              Are you sure you want to edit <strong>{quizToEdit.title}</strong>?
+            </p>
+            <div className="remove-modal-actions">
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--cancel"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--confirm-primary"
+                onClick={handleConfirmEdit}
+              >
+                Edit Quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteModal && quizToDelete && canManage && (
+        <div className="remove-modal-backdrop">
+          <div className="remove-modal">
+            <h2>Delete Quiz</h2>
+            <p>
+              Are you sure you want to delete{' '}
+              <strong>{quizToDelete.title}</strong>?
+            </p>
+            {actionErrMessage && (
+              <p className="error-message">{actionErrMessage}</p>
+            )}
+            <div className="remove-modal-actions">
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--cancel"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--confirm-primary"
+                onClick={handleConfirmDelete}
+                disabled={publishingId === quizToDelete.assessment_id}
+              >
+                {publishingId === quizToDelete.assessment_id
+                  ? 'Deleting...'
+                  : 'Delete Quiz'}
               </button>
             </div>
           </div>
