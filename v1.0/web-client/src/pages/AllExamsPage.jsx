@@ -27,6 +27,7 @@ function ExamRow({
   exam,
   canManage,
   onPublishClick,
+  onPublishNewStudentsClick,
   onCloseClick,
   onReopenClick,
   isPublishing,
@@ -107,23 +108,37 @@ function ExamRow({
                   ? 'Unpublish'
                   : 'Publish'}
             </button>
-            {exam.is_closed ? (
+            {exam.is_published && (
+              <>
+                {exam.is_closed ? (
+                  <button
+                    type="button"
+                    className="quiz-close-btn quiz-close-btn--reopen"
+                    onClick={() => onReopenClick(exam)}
+                    disabled={isPublishing || isClosing}
+                  >
+                    {isClosing ? 'Saving...' : 'Reopen Exam'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="quiz-close-btn"
+                    onClick={() => onCloseClick(exam)}
+                    disabled={isPublishing || isClosing}
+                  >
+                    Close Exam
+                  </button>
+                )}
+              </>
+            )}
+            {exam.is_published && !exam.is_closed && (
               <button
                 type="button"
-                className="quiz-close-btn quiz-close-btn--reopen"
-                onClick={() => onReopenClick(exam)}
+                className="assignment-add-students-btn"
+                onClick={() => onPublishNewStudentsClick(exam)}
                 disabled={isPublishing || isClosing}
               >
-                {isClosing ? 'Saving...' : 'Reopen Exam'}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="quiz-close-btn"
-                onClick={() => onCloseClick(exam)}
-                disabled={isPublishing || isClosing || !exam.is_published}
-              >
-                Close Exam
+                Add Student
               </button>
             )}
           </>
@@ -205,6 +220,52 @@ function AllExamsPage() {
       setIsLoadingStudents(false)
     }
   }, [courseId, token])
+
+  const fetchStudentForAdding = useCallback(
+    async (exam) => {
+      setIsLoadingStudents(true)
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/courses/people/${courseId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        )
+        if (!response.ok) throw new Error('Failed to fetch students')
+        const data = await response.json()
+        const students = (data.people ?? []).filter(
+          (person) => person.role === 'STUDENT',
+        )
+
+        const allowedResponse = await fetch(
+          `${API_BASE}/api/assessments/allowed-students/${exam.assessment_id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        )
+        if (!allowedResponse.ok) {
+          throw new Error('Failed to fetch allowed students')
+        }
+        const allowedData = await allowedResponse.json()
+        const allowedStudentIds = allowedData.student_ids ?? []
+
+        const availableStudents = students.filter(
+          (student) => !allowedStudentIds.includes(student.user_id),
+        )
+
+        setStudentsList(availableStudents)
+        setSelectedStudentIds(new Set())
+      } catch (error) {
+        console.error('Failed to fetch students for adding', error)
+        setStudentsList([])
+        setSelectedStudentIds(new Set())
+        setActionErrMessage(error.message || 'Failed to fetch students')
+      } finally {
+        setIsLoadingStudents(false)
+      }
+    },
+    [token, courseId],
+  )
 
   useEffect(() => {
     if (!courseId || !token) return
@@ -304,6 +365,13 @@ function AllExamsPage() {
     setActionErrMessage('')
     setExamToPublish(exam)
     setPublishModalStep('choose')
+  }
+
+  const handlePublishNewStudentsClick = (exam) => {
+    fetchStudentForAdding(exam)
+    setActionErrMessage('')
+    setExamToPublish(exam)
+    setPublishModalStep('choose-new-students')
   }
 
   const handleChoosePublishAll = () => {
@@ -430,6 +498,7 @@ function AllExamsPage() {
               exam={exam}
               canManage={canManage}
               onPublishClick={handlePublishClick}
+              onPublishNewStudentsClick={handlePublishNewStudentsClick}
               onCloseClick={handleCloseClick}
               onReopenClick={handleReopenClick}
               isPublishing={publishingId === exam.assessment_id}
@@ -594,6 +663,69 @@ function AllExamsPage() {
                   ? 'Publishing...'
                   : 'Publish'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {examToPublish && publishModalStep === 'choose-new-students' && (
+        <div className="remove-modal-backdrop">
+          <div className="remove-modal">
+            <h2>Add New Students</h2>
+            <p>
+              Choose which students to publish{' '}
+              <strong>{examToPublish.title}</strong> to.
+            </p>
+            {actionErrMessage && (
+              <p className="error-message">{actionErrMessage}</p>
+            )}
+            {isLoadingStudents ? (
+              <p>Loading students...</p>
+            ) : studentsList.length === 0 ? (
+              <p>
+                All students can access <strong>{examToPublish.title}</strong>
+              </p>
+            ) : (
+              <div className="publish-students-list">
+                {studentsList.map((student) => (
+                  <label key={student.user_id} className="publish-student-row">
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.has(student.user_id)}
+                      onChange={() => handleToggleStudent(student.user_id)}
+                    />
+                    <span className="publish-student-name">{student.name}</span>
+                    <span className="publish-student-email">
+                      {student.email}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="remove-modal-actions">
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--cancel"
+                onClick={resetPublishModal}
+                disabled={publishingId === examToPublish.assessment_id}
+              >
+                Cancel
+              </button>
+              {studentsList.length > 0 && (
+                <button
+                  type="button"
+                  className="remove-modal-btn remove-modal-btn--save"
+                  onClick={handleConfirmPublishSelected}
+                  disabled={
+                    publishingId === examToPublish.assessment_id ||
+                    selectedStudentIds.size === 0
+                  }
+                >
+                  {publishingId === examToPublish.assessment_id
+                    ? 'Saving...'
+                    : 'Save'}
+                </button>
+              )}
             </div>
           </div>
         </div>
