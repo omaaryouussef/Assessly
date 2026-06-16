@@ -1590,6 +1590,34 @@
   background: #144062;
 }
 
+.remove-modal-btn--save {
+  border: 0;
+  min-width: 96px;
+  background: var(--primary-color);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.remove-modal-btn--save:hover:not(:disabled) {
+  background: #144062;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+.remove-modal-btn--save:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.remove-modal-btn--save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 /* Assignments page */
 .assignments-page-container {
   width: 100%;
@@ -1865,6 +1893,34 @@
 }
 
 .quiz-close-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.assignment-add-students-btn {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  border-radius: 8px;
+  background: #fff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.assignment-add-students-btn:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.55);
+  color: #1e40af;
+}
+
+.assignment-add-students-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }

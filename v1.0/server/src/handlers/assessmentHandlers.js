@@ -137,6 +137,68 @@ export const getQuizzesByCourseId = (req, res) =>
 export const getExamsByCourseId = (req, res) =>
   getTimedAssessmentsByCourseId(req, res, "EXAM");
 
+export const getAllowedStudentsByAssessmentId = async (req, res) => {
+  const { assessmentId } = req.params;
+  const { user_id: userId, role } = req.user;
+
+  if (role !== "INSTRUCTOR" && role !== "TA") {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  try {
+    const assessment = await db.query(
+      `SELECT assessment_id, course_id, assess_type
+       FROM assessment
+       WHERE assessment_id = $1`,
+      [assessmentId],
+    );
+
+    if (assessment.rows.length === 0) {
+      return res.status(404).json({ error: "Assessment not found" });
+    }
+
+    const row = assessment.rows[0];
+    if (!TIMED_ASSESSMENT_TYPES.has(row.assess_type)) {
+      return res.status(400).json({
+        error: "Only quizzes and exams have selective student access",
+      });
+    }
+
+    const allowed = await canManageCourse(row.course_id, userId, role);
+    if (!allowed) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const result = await db.query(
+      `SELECT u.user_id, u.name, u.email
+       FROM users u
+       INNER JOIN student_access_assessments saa
+         ON saa.student_id = u.user_id
+       INNER JOIN student_course sc
+         ON sc.student_id = u.user_id
+        AND sc.course_id = $2
+       WHERE saa.assessment_id = $1
+         AND saa.can_access = true
+       ORDER BY u.name`,
+      [assessmentId, row.course_id],
+    );
+
+    const students = result.rows.map((student) => ({
+      user_id: student.user_id,
+      name: student.name,
+      email: student.email,
+    }));
+
+    return res.status(200).json({
+      students,
+      student_ids: students.map((student) => student.user_id),
+    });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to fetch allowed students" });
+  }
+};
+
 export const toggleAssessmentPublish = async (req, res) => {
   const { assessmentId } = req.params;
   const { is_published, publish_mode, student_ids } = req.body;
@@ -201,7 +263,8 @@ export const toggleAssessmentPublish = async (req, res) => {
           if (!Array.isArray(student_ids) || student_ids.length === 0) {
             await db.query("ROLLBACK");
             return res.status(400).json({
-              error: "student_ids must be a non-empty array for selected publish",
+              error:
+                "student_ids must be a non-empty array for selected publish",
             });
           }
 
@@ -345,7 +408,9 @@ export const deleteAssessment = async (req, res) => {
     if (!allowed) {
       return res.status(403).json({ error: "Forbidden" });
     }
-    await db.query("DELETE FROM assessment WHERE assessment_id = $1", [assessmentId]);
+    await db.query("DELETE FROM assessment WHERE assessment_id = $1", [
+      assessmentId,
+    ]);
     return res.status(200).json({ message: "Assessment deleted successfully" });
   } catch (error) {
     console.log("Error: ", error);

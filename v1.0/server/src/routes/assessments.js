@@ -12,7 +12,11 @@ import { authorize } from "../middleware/authorize.js";
 
 const assessmentsRouter = Router();
 
-assessmentsRouter.get("/assignments/:courseId", authenticate, getAssignmentsByCourseId);
+assessmentsRouter.get(
+  "/assignments/:courseId",
+  authenticate,
+  getAssignmentsByCourseId,
+);
 assessmentsRouter.get("/quizzes/:courseId", authenticate, getQuizzesByCourseId);
 assessmentsRouter.get("/exams/:courseId", authenticate, getExamsByCourseId);
 assessmentsRouter.patch(
@@ -27,6 +31,11 @@ assessmentsRouter.patch(
   authorize("INSTRUCTOR", "TA"),
   toggleAssessmentClose,
 );
-assessmentsRouter.delete("/:assessmentId", authenticate, authorize("INSTRUCTOR", "TA"), deleteAssessment);
+assessmentsRouter.delete(
+  "/:assessmentId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA"),
+  deleteAssessment,
+);
 
 export default assessmentsRouter;

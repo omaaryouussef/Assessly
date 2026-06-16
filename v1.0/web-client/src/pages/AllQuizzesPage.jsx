@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, use } from 'react'
 import { NavLink, useParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -27,6 +27,7 @@ function QuizRow({
   quiz,
   canManage,
   onPublishClick,
+  onPublishNewStudentsClick,
   onCloseClick,
   onReopenClick,
   isPublishing,
@@ -131,6 +132,16 @@ function QuizRow({
                 )}
               </>
             )}
+            {quiz.is_published && !quiz.is_closed && (
+              <button
+                type="button"
+                className="assignment-add-students-btn"
+                onClick={() => onPublishNewStudentsClick(quiz)}
+                disabled={isPublishing || isClosing}
+              >
+                Add Student
+              </button>
+            )}
           </>
         ) : (
           <>
@@ -210,6 +221,53 @@ function AllQuizzesPage() {
       setIsLoadingStudents(false)
     }
   }, [courseId, token])
+
+  const fetchStudentForAdding = useCallback(
+    async (quiz) => {
+      setIsLoadingStudents(true)
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/courses/people/${courseId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
+        if (!response.ok) throw new Error('Failed to fetch students')
+        const data = await response.json()
+        const students = (data.people ?? []).filter(
+          (person) => person.role === 'STUDENT'
+        )
+
+        const allowedResponse = await fetch(
+          `${API_BASE}/api/assessments/allowed-students/${quiz.assessment_id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
+        if (!allowedResponse.ok) {
+          throw new Error('Failed to fetch allowed students')
+        }
+        const allowedData = await allowedResponse.json()
+        console.log(allowedData)
+        const allowedStudentIds = allowedData.student_ids ?? []
+
+        const availableStudents = students.filter(
+          (student) => !allowedStudentIds.includes(student.user_id)
+        )
+
+        setStudentsList(availableStudents)
+        setSelectedStudentIds(new Set())
+      } catch (error) {
+        console.error('Failed to fetch students for adding', error)
+        setStudentsList([])
+        setSelectedStudentIds(new Set())
+        setActionErrMessage(error.message || 'Failed to fetch students')
+      } finally {
+        setIsLoadingStudents(false)
+      }
+    },
+    [token, courseId]
+  )
 
   useEffect(() => {
     if (!courseId || !token) return
@@ -311,6 +369,13 @@ function AllQuizzesPage() {
     setPublishModalStep('choose')
   }
 
+  const handlePublishNewStudentsClick = (quiz) => {
+    fetchStudentForAdding(quiz)
+    setActionErrMessage('')
+    setQuizToPublish(quiz)
+    setPublishModalStep('choose-new-students')
+  }
+
   const handleChoosePublishAll = () => {
     setPublishModalStep('confirm-all')
     setActionErrMessage('')
@@ -349,7 +414,6 @@ function AllQuizzesPage() {
       }
       return next
     })
-    console.log(selectedStudentIds)
   }
 
   const handleToggleAllStudents = () => {
@@ -435,6 +499,7 @@ function AllQuizzesPage() {
               quiz={quiz}
               canManage={canManage}
               onPublishClick={handlePublishClick}
+              onPublishNewStudentsClick={handlePublishNewStudentsClick}
               onCloseClick={handleCloseClick}
               onReopenClick={handleReopenClick}
               isPublishing={publishingId === quiz.assessment_id}
@@ -604,6 +669,67 @@ function AllQuizzesPage() {
         </div>
       )}
 
+      {quizToPublish && publishModalStep === 'choose-new-students' && (
+        <div className="remove-modal-backdrop">
+          <div className="remove-modal">
+            <h2>Add New Students</h2>
+            <p>
+              Choose which students to publish{' '}
+              <strong>{quizToPublish.title}</strong> to.
+            </p>
+            {actionErrMessage && (
+              <p className="error-message">{actionErrMessage}</p>
+            )}
+            {studentsList.length === 0 ? (
+              <p>
+                All students can access{' '}
+                <strong>{quizToPublish.title}</strong>
+              </p>
+            ) : (
+              <div className="publish-students-list">
+                {studentsList.map((student) => (
+                  <label key={student.user_id} className="publish-student-row">
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.has(student.user_id)}
+                      onChange={() => handleToggleStudent(student.user_id)}
+                    />
+                    <span className="publish-student-name">{student.name}</span>
+                    <span className="publish-student-email">
+                      {student.email}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="remove-modal-actions">
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--cancel"
+                onClick={resetPublishModal}
+                disabled={publishingId === quizToPublish.assessment_id}
+              >
+                Cancel
+              </button>
+              {studentsList.length > 0 && (
+                <button
+                  type="button"
+                  className="remove-modal-btn remove-modal-btn--save"
+                  onClick={handleConfirmPublishSelected}
+                  disabled={
+                    publishingId === quizToPublish.assessment_id ||
+                    selectedStudentIds.size === 0
+                  }
+                >
+                  {publishingId === quizToPublish.assessment_id
+                    ? 'Saving...'
+                    : 'Save'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {quizToClose && (
         <div className="remove-modal-backdrop">
           <div className="remove-modal">
