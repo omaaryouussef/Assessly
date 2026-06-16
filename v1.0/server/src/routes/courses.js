@@ -25,6 +25,7 @@ import {
     addStudentToCourse,
     addTaToCourse,
     removeTaFromCourse,
+    getCourseHomeByCourseId,
 } from "../handlers/courseHandlers.js";
 const coursesRouter = Router();
 
@@ -43,6 +44,7 @@ coursesRouter.post("/add/:courseId", authenticate, authorize("INSTRUCTOR"), addS
 coursesRouter.post("/add-ta/:courseId", authenticate, authorize("INSTRUCTOR"), addTaToCourse);
 coursesRouter.delete("/remove/:courseId", authenticate, authorize("INSTRUCTOR"), removeStudentfromCourse);
 coursesRouter.delete("/remove-ta/:courseId", authenticate, authorize("INSTRUCTOR"), removeTaFromCourse);
+coursesRouter.get("/home/:courseId", authenticate, getCourseHomeByCourseId);
 coursesRouter.get("/people/:courseId", authenticate, getPeopleByCourseId);
 
 export default coursesRouter;

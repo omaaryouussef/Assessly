@@ -35,6 +35,170 @@
   font-size: 14px;
   color: #cbd5e1;
 }
+
+.course-home-page-container {
+  padding-bottom: 32px;
+}
+
+.course-home-status {
+  margin: 24px 0;
+  font-size: 14px;
+  color: var(--light-text-color);
+}
+
+.course-home-status--error {
+  color: #b91c1c;
+}
+
+.course-home-hero {
+  margin: 24px 0 28px;
+}
+
+.course-home-title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--bold-text-color);
+  line-height: 1.25;
+}
+
+.course-home-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--light-text-color);
+}
+
+.course-home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.course-home-card {
+  background: #ffffff;
+  border: 1px solid #e8edf3;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.course-home-card--wide {
+  grid-column: 1 / -1;
+}
+
+.course-home-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: var(--primary-color);
+}
+
+.course-home-card-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--bold-text-color);
+}
+
+.course-home-card-header svg {
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+.course-home-details {
+  margin: 0;
+}
+
+.course-home-detail-row {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.course-home-detail-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.course-home-detail-row dt {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--light-text-color);
+}
+
+.course-home-detail-row dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bold-text-color);
+  word-break: break-word;
+}
+
+.course-home-enrollment-key,
+.course-home-highlight {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--bold-text-color);
+  letter-spacing: 0.02em;
+}
+
+.course-home-enrollment-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.course-home-ta-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.course-home-ta-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 14px;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.course-home-ta-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bold-text-color);
+}
+
+.course-home-ta-email {
+  font-size: 13px;
+  color: var(--light-text-color);
+}
+
+.course-home-empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--light-text-color);
+}
+
+@media (max-width: 768px) {
+  .course-home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .course-home-card--wide {
+    grid-column: auto;
+  }
+}
+
 /* Login Page CSS */
 .login-container {
   min-height: 100vh;

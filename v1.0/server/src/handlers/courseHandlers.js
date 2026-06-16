@@ -1,5 +1,7 @@
 import db from "../../db/index.js";
 
+
+
 export const getCoursesByUserId = async (req, res) => {
   const { user_id: userId, role: role } = req.user;
   try {
@@ -407,5 +409,93 @@ export const removeTaFromCourse = async (req, res) => {
   } catch (error) {
     console.log("Error: ", error);
     return res.status(500).json({ error: "Failed to remove TA from course" });
+  }
+};
+
+async function userCanAccessCourse(courseId, userId, role) {
+  if (role === "INSTRUCTOR") {
+    const result = await db.query(
+      "SELECT 1 FROM course WHERE course_id = $1 AND instructor_id = $2",
+      [courseId, userId],
+    );
+    return result.rows.length > 0;
+  }
+
+  if (role === "TA") {
+    const result = await db.query(
+      "SELECT 1 FROM ta_course WHERE course_id = $1 AND ta_id = $2",
+      [courseId, userId],
+    );
+    return result.rows.length > 0;
+  }
+
+  if (role === "STUDENT") {
+    const result = await db.query(
+      "SELECT 1 FROM student_course WHERE course_id = $1 AND student_id = $2",
+      [courseId, userId],
+    );
+    return result.rows.length > 0;
+  }
+
+  return false;
+}
+
+export const getCourseHomeByCourseId = async (req, res) => {
+  const { courseId } = req.params;
+  const { user_id: userId, role } = req.user;
+
+  try {
+    const courseResult = await db.query(
+      "SELECT * FROM course WHERE course_id = $1",
+      [courseId],
+    );
+
+    if (courseResult.rows.length === 0) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const allowed = await userCanAccessCourse(courseId, userId, role);
+    if (!allowed) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const course = courseResult.rows[0];
+
+    const instructorResult = await db.query(
+      `SELECT u.user_id, u.name, u.email
+       FROM users u
+       WHERE u.user_id = $1`,
+      [course.instructor_id],
+    );
+
+    const tasResult = await db.query(
+      `SELECT u.user_id, u.name, u.email
+       FROM users u
+       INNER JOIN ta_course tc ON tc.ta_id = u.user_id
+       WHERE tc.course_id = $1
+       ORDER BY u.name`,
+      [courseId],
+    );
+
+    const mapPerson = (row) => ({
+      user_id: row.user_id,
+      name: row.name,
+      email: row.email,
+    });
+
+    return res.status(200).json({
+      course_id: course.course_id,
+      course_title: course.coursetitle,
+      classroom: course.classroom ?? "",
+      meeting_time: course.meeting_time ?? "",
+      enrollment_key: course.enrollementkey,
+      instructor: instructorResult.rows[0]
+        ? mapPerson(instructorResult.rows[0])
+        : null,
+      tas: tasResult.rows.map(mapPerson),
+    });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to fetch course home" });
   }
 };

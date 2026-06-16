@@ -20,6 +20,8 @@ CREATE TABLE Course(
     courseTitle VARCHAR(50) NOT NULL,
     num_student INT NOT NULL,
     IsOpenEnrollement BOOLEAN NOT NULL,
+    classroom VARCHAR(32) NOT NULL DEFAULT '',
+    meeting_time VARCHAR(45) NOT NULL DEFAULT '',
     FOREIGN KEY (instructor_id) REFERENCES Users(user_id)
 );
 
