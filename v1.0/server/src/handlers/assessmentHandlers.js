@@ -417,3 +417,67 @@ export const deleteAssessment = async (req, res) => {
     return res.status(500).json({ error: "Failed to delete assessment" });
   }
 };
+
+export const createAssessment = async (req, res) => {
+  const { courseId } = req.params;
+  const {
+    title,
+    duration,
+    maxGrade,
+    dueDate,
+    type,
+    securitySettings,
+    questions,
+  } = req.body;
+
+  try {
+    const course = await db.query("SELECT * FROM course WHERE course_id = $1", [
+      courseId,
+    ]);
+    if (course.rows.length === 0) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+    const assessment = await db.query(
+      "INSERT INTO assessment (title,assess_type, duration, max_grade, due_date, course_id, is_published, is_closed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING assessment_id, assess_type",
+      [title, type, duration, maxGrade, dueDate, courseId, false, false],
+    );
+    const assessmentId = assessment.rows[0].assessment_id;
+    for (const question of questions) {
+      const questionsResult = await db.query(
+        "INSERT INTO question (question_type, prompt, max_grade, prog_lang, lang_version, num_choices, assessment_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+        [
+          question.qType,
+          question.qPrompt,
+          question.qMaxGrade,
+          question.progLang || '',
+          question.langVersion || '',
+          question.options.length,
+          assessmentId,
+        ],
+      );
+      const questionId = questionsResult.rows[0].question_id;
+      if (question.qType === "MCQ") {
+        for (const option of question.options) {
+          await db.query(
+            "INSERT INTO choice (is_true_answer, choice_body, question_id) VALUES ($1, $2, $3)",
+            [false, option, questionId],
+          );
+        }
+      }
+    }
+    await db.query(
+      "INSERT INTO security_settings (windowswitching, clipboardaccess, screensnapshot, questionstats, assessment_id) VALUES ($1, $2, $3, $4, $5)",
+      [
+        securitySettings.windowSwitching,
+        securitySettings.clipboardAccess,
+        securitySettings.screenSnapshot,
+        securitySettings.questionStats,
+        assessmentId,
+      ],
+    );
+    return res.status(200).json(assessment.rows[0]);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to create assessment" });
+  }
+};

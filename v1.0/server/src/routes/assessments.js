@@ -7,6 +7,7 @@ import {
   toggleAssessmentPublish,
   toggleAssessmentClose,
   deleteAssessment,
+  createAssessment,
 } from "../handlers/assessmentHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
@@ -36,6 +37,13 @@ assessmentsRouter.delete(
   authenticate,
   authorize("INSTRUCTOR", "TA"),
   deleteAssessment,
+);
+
+assessmentsRouter.post(
+  "/:courseId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA"),
+  createAssessment,
 );
 
 export default assessmentsRouter;

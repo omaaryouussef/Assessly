@@ -8,10 +8,14 @@ import {
   faPen,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
+import { useAuth } from '../../components/auth/AuthWrapper'
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function AssessmentStudioPage() {
   const navigate = useNavigate()
   const { courseId } = useParams()
+  const { token } = useAuth()
   // Assessment specifications
   const [title, setTitle] = useState('')
   const [duration, setDuration] = useState(0)
@@ -37,20 +41,8 @@ function AssessmentStudioPage() {
 
   const [questionErr, setQuestionErr] = useState('')
   const [showDiscardModal, setShowDiscardModal] = useState(false)
-  const [formData, setFormData] = useState({
-    title: '',
-    type: '',
-    duration: 0,
-    maxGrade: 0,
-    dueDate: '',
-    securitySettings: {
-      windowSwitching: false,
-      clipboardAccess: false,
-      screenSnapshot: false,
-      questionStats: false,
-    },
-    questions: [],
-  })
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+
 
   const handleSaveQuestion = () => {
     if (!qType || !qPrompt || !qMaxGrade) {
@@ -245,7 +237,7 @@ function AssessmentStudioPage() {
     </div>
   )
 
-  const handleSaveAssessment = (e) => {
+  const handleSaveAssessment = async (e) => {
     e.preventDefault()
     setAssessmentErr('')
     if (!title || !type || !maxGrade || !dueDate) {
@@ -253,17 +245,17 @@ function AssessmentStudioPage() {
       return
     }
 
-    if (type === 'EXAM' || type === 'QUIZ') {
-      if (duration === 0) {
-        setAssessmentErr('Duration is required for timed assessments')
-        return
-      }
-    } else if (questionsList.length === 0) {
+    if ((type === 'EXAM' || type === 'QUIZ') && !duration) {
+      setAssessmentErr('Duration is required for timed assessments')
+      return
+    }
+
+    if (questionsList.length === 0) {
       setAssessmentErr('At least one question is required')
       return
     }
 
-    setFormData({
+    const assessmentPayload = {
       title,
       type,
       duration,
@@ -276,10 +268,24 @@ function AssessmentStudioPage() {
         questionStats,
       },
       questions: questionsList,
-    })
-    console.log(formData)
-    //navigate to the assignments page for now
-    navigate(`/course/${courseId}/assignments`)
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/assessments/${courseId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(assessmentPayload),
+      })
+      if (!response.ok) throw new Error('Failed to create assessment')
+      const data = await response.json()
+      setShowSuccessModal(true)
+    } catch (error) {
+      console.error('Failed to create assessment', error)
+      setAssessmentErr(error.message || 'Failed to create assessment')
+    }
   }
 
   const handleDiscardAssessment = () => {
@@ -574,6 +580,26 @@ function AssessmentStudioPage() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <div className="success-modal-backdrop">
+          <div className="success-modal">
+            <h3>Assessment Created</h3>
+            <p>Assessment has been created successfully.</p>
+
+            <button
+              type="button"
+              className="success-modal-btn"
+              onClick={() => {
+                setShowSuccessModal(false)
+                navigate(`/course/${courseId}/assignments`)
+              }}
+            >
+              Go to Assignments
+            </button>
           </div>
         </div>
       )}
