@@ -437,6 +437,15 @@ export const createAssessment = async (req, res) => {
     if (course.rows.length === 0) {
       return res.status(404).json({ error: "Course not found" });
     }
+    const alreadyExists = await db.query(
+      "SELECT * FROM assessment WHERE title = $1 AND course_id = $2",
+      [title, courseId],
+    );
+    if (alreadyExists.rows.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "Assessment with this title already exists" });
+    }
     const assessment = await db.query(
       "INSERT INTO assessment (title,assess_type, duration, max_grade, due_date, course_id, is_published, is_closed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING assessment_id, assess_type",
       [title, type, duration, maxGrade, dueDate, courseId, false, false],
@@ -449,8 +458,8 @@ export const createAssessment = async (req, res) => {
           question.qType,
           question.qPrompt,
           question.qMaxGrade,
-          question.progLang || '',
-          question.langVersion || '',
+          question.progLang || "",
+          question.langVersion || "",
           question.options.length,
           assessmentId,
         ],

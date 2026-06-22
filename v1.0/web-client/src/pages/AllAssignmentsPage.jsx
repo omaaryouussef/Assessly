@@ -253,12 +253,10 @@ function AllAssignmentsPage() {
 
       {canManage && (
         <div className="assignments-toolbar">
-          <NavLink to={`/course/${courseId}/assessment-studio`}>
-            <button type="button" className="create-assignment-button">
+            <button type="button" className="create-assignment-button" onClick={() => navigate(`/course/${courseId}/assessment-studio`, {state: {assessmentType: 'ASSIGNMENT'}})}>
               <FontAwesomeIcon icon={faPlus} />
               <span>Create Assignment</span>
             </button>
-          </NavLink>
         </div>
       )}
 

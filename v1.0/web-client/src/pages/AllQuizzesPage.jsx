@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, use } from 'react'
-import { NavLink, useParams } from 'react-router-dom'
+import { NavLink, useParams, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCircleQuestion,
@@ -166,6 +166,7 @@ function QuizRow({
 }
 
 function AllQuizzesPage() {
+  const navigate = useNavigate()
   const { courseId } = useParams()
   const { user, token } = useAuth()
   const [quizzesList, setQuizzesList] = useState([])
@@ -482,12 +483,10 @@ function AllQuizzesPage() {
 
       {canManage && (
         <div className="assignments-toolbar">
-          <NavLink to={`/course/${courseId}/assessment-studio`}>
-            <button type="button" className="create-assignment-button">
+            <button type="button" className="create-assignment-button" onClick={() => navigate(`/course/${courseId}/assessment-studio`, {state: {assessmentType: 'QUIZ'}})}>
               <FontAwesomeIcon icon={faPlus} />
               <span>Create Quiz</span>
             </button>
-          </NavLink>
         </div>
       )}
 

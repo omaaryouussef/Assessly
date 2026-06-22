@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { NavLink, useParams } from 'react-router-dom'
+import { NavLink, useParams, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faFilePen,
@@ -182,7 +182,7 @@ function AllExamsPage() {
   const [examToEdit, setExamToEdit] = useState(null)
   const [examToDelete, setExamToDelete] = useState(null)
   const canManage = user?.role === 'INSTRUCTOR' || user?.role === 'TA'
-
+  const navigate = useNavigate()
   const fetchExams = useCallback(async () => {
     const response = await fetch(
       `${API_BASE}/api/assessments/exams/${courseId}`,
@@ -229,19 +229,19 @@ function AllExamsPage() {
           `${API_BASE}/api/courses/people/${courseId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          },
+          }
         )
         if (!response.ok) throw new Error('Failed to fetch students')
         const data = await response.json()
         const students = (data.people ?? []).filter(
-          (person) => person.role === 'STUDENT',
+          (person) => person.role === 'STUDENT'
         )
 
         const allowedResponse = await fetch(
           `${API_BASE}/api/assessments/allowed-students/${exam.assessment_id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          },
+          }
         )
         if (!allowedResponse.ok) {
           throw new Error('Failed to fetch allowed students')
@@ -250,7 +250,7 @@ function AllExamsPage() {
         const allowedStudentIds = allowedData.student_ids ?? []
 
         const availableStudents = students.filter(
-          (student) => !allowedStudentIds.includes(student.user_id),
+          (student) => !allowedStudentIds.includes(student.user_id)
         )
 
         setStudentsList(availableStudents)
@@ -264,7 +264,7 @@ function AllExamsPage() {
         setIsLoadingStudents(false)
       }
     },
-    [token, courseId],
+    [token, courseId]
   )
 
   useEffect(() => {
@@ -481,12 +481,10 @@ function AllExamsPage() {
 
       {canManage && (
         <div className="assignments-toolbar">
-          <NavLink to={`/course/${courseId}/assessment-studio`}>
-            <button type="button" className="create-assignment-button">
-              <FontAwesomeIcon icon={faPlus} />
-              <span>Create Exam</span>
-            </button>
-          </NavLink>
+          <button type="button" className="create-assignment-button" onClick={() => navigate(`/course/${courseId}/assessment-studio`, {state: {assessmentType: 'EXAM'}})}>
+            <FontAwesomeIcon icon={faPlus} />
+            <span>Create Exam</span>
+          </button>
         </div>
       )}
 

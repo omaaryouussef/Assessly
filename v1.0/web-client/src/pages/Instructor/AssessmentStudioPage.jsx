@@ -1,6 +1,6 @@
 import React from 'react'
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faPlus,
@@ -14,12 +14,14 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_U
 
 function AssessmentStudioPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const assessmentType = location.state?.assessmentType || ''
   const { courseId } = useParams()
   const { token } = useAuth()
   // Assessment specifications
   const [title, setTitle] = useState('')
   const [duration, setDuration] = useState(0)
-  const [type, setType] = useState('')
+  const [type, setType] = useState(assessmentType)
   const [maxGrade, setMaxGrade] = useState(0)
   const [dueDate, setDueDate] = useState('')
   const [assessmentErr, setAssessmentErr] = useState('')
@@ -279,12 +281,12 @@ function AssessmentStudioPage() {
         },
         body: JSON.stringify(assessmentPayload),
       })
-      if (!response.ok) throw new Error('Failed to create assessment')
       const data = await response.json()
-      setShowSuccessModal(true)
+      if (!response.ok) throw new Error(data.error || 'Failed to create assessment')
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Failed to create assessment', error)
-      setAssessmentErr(error.message || 'Failed to create assessment')
+      setAssessmentErr(error.message || 'Failed to create assessment');
     }
   }
 
