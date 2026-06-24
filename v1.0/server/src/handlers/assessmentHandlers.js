@@ -84,7 +84,6 @@ export const getAssignmentsByCourseId = async (req, res) => {
 };
 
 async function getTimedAssessmentsByCourseId(req, res, assessType) {
-  console.log("assessType: ", assessType);
   const { courseId } = req.params;
   const { user_id: userId, role } = req.user;
   const label = assessType === "QUIZ" ? "quizzes" : "exams";
@@ -491,3 +490,171 @@ export const createAssessment = async (req, res) => {
     return res.status(500).json({ error: "Failed to create assessment" });
   }
 };
+
+export const updateAssessment = async (req, res) => {
+  const { assessmentId } = req.params;
+  const { title, duration, maxGrade, dueDate, type, securitySettings, questions } = req.body;
+  const { user_id: userId, role } = req.user;
+
+  const isDbQuestionId = (id) => {
+    const numericId = Number(id);
+    return (
+      Number.isInteger(numericId) &&
+      numericId > 0 &&
+      numericId <= 2147483647
+    );
+  };
+
+  const upsertQuestionChoices = async (question) => {
+    await db.query("DELETE FROM choice WHERE question_id = $1", [question.questionId]);
+
+    if (question.qType !== "MCQ") {
+      return;
+    }
+
+    for (const option of question.options || []) {
+      await db.query(
+        "INSERT INTO choice (is_true_answer, choice_body, question_id) VALUES ($1, $2, $3)",
+        [false, option, question.questionId],
+      );
+    }
+  };
+
+  try {
+    const assessment = await db.query("SELECT * FROM assessment WHERE assessment_id = $1", [assessmentId]);
+    if (assessment.rows.length === 0) {
+      return res.status(404).json({ error: "Assessment not found" });
+    }
+    const row = assessment.rows[0];
+    const allowed = await canManageCourse(row.course_id, userId, role);
+    if (!allowed) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const newAssessment = await db.query(
+      "UPDATE assessment SET title = $1, duration = $2, max_grade = $3, due_date = $4, assess_type = $5 WHERE assessment_id = $6 RETURNING *",
+      [title, duration, maxGrade, dueDate, type, assessmentId],
+    );
+    const newAssessmentId = newAssessment.rows[0].assessment_id;
+
+    const existingQuestions = await db.query(
+      "SELECT question_id FROM question WHERE assessment_id = $1",
+      [assessmentId],
+    );
+    const existingQuestionIds = new Set(
+      existingQuestions.rows.map((questionRow) => questionRow.question_id),
+    );
+    const keptQuestionIds = new Set();
+
+    for (const question of questions) {
+      const questionId = Number(question.id);
+      const isExistingQuestion =
+        isDbQuestionId(question.id) && existingQuestionIds.has(questionId);
+
+      let savedQuestionId;
+
+      if (isExistingQuestion) {
+        const questionsResult = await db.query(
+          "UPDATE question SET question_type = $1, prompt = $2, max_grade = $3, prog_lang = $4, lang_version = $5, num_choices = $6 WHERE question_id = $7 AND assessment_id = $8 RETURNING question_id",
+          [
+            question.qType,
+            question.qPrompt,
+            question.qMaxGrade,
+            question.progLang || "",
+            question.langVersion || "",
+            (question.options || []).length,
+            questionId,
+            assessmentId,
+          ],
+        );
+
+        if (questionsResult.rows.length === 0) {
+          continue;
+        }
+
+        savedQuestionId = questionsResult.rows[0].question_id;
+      } else {
+        const questionsResult = await db.query(
+          "INSERT INTO question (question_type, prompt, max_grade, prog_lang, lang_version, num_choices, assessment_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING question_id",
+          [
+            question.qType,
+            question.qPrompt,
+            question.qMaxGrade,
+            question.progLang || "",
+            question.langVersion || "",
+            (question.options || []).length,
+            assessmentId,
+          ],
+        );
+        savedQuestionId = questionsResult.rows[0].question_id;
+      }
+
+      keptQuestionIds.add(savedQuestionId);
+      await upsertQuestionChoices({ ...question, questionId: savedQuestionId });
+    }
+
+    for (const existingQuestionId of existingQuestionIds) {
+      if (!keptQuestionIds.has(existingQuestionId)) {
+        await db.query("DELETE FROM choice WHERE question_id = $1", [existingQuestionId]);
+        await db.query("DELETE FROM question WHERE question_id = $1", [existingQuestionId]);
+      }
+    }
+
+    await db.query(
+      "UPDATE security_settings SET windowswitching = $1, clipboardaccess = $2, screensnapshot = $3, questionstats = $4 WHERE assessment_id = $5",
+      [
+        securitySettings.windowSwitching,
+        securitySettings.clipboardAccess,
+        securitySettings.screenSnapshot,
+        securitySettings.questionStats,
+        newAssessmentId,
+      ],
+    );
+    return res.status(200).json(newAssessment.rows[0]);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to update assessment" });
+  }
+};
+
+
+
+export const getAssessmentById = async (req, res) => {
+  const { assessmentId } = req.params;
+  try {
+    const assessment = await db.query("SELECT * FROM assessment WHERE assessment_id = $1", [assessmentId]);
+    if (assessment.rows.length === 0) {
+      return res.status(404).json({ error: "Assessment not found" });
+    }
+    const row = assessment.rows[0];
+    const securitySettings = await db.query("SELECT * FROM security_settings WHERE assessment_id = $1", [assessmentId]);
+    const questions = await db.query("SELECT * FROM question WHERE assessment_id = $1", [assessmentId]);
+
+    const questionsWithOptions = await Promise.all(
+      questions.rows.map(async (question) => {
+        if (question.question_type !== "MCQ") {
+          return { ...question, options: [] };
+        }
+
+        const choices = await db.query(
+          "SELECT choice_body FROM choice WHERE question_id = $1 ORDER BY choice_id",
+          [question.question_id],
+        );
+
+        return {
+          ...question,
+          options: choices.rows.map((choice) => choice.choice_body),
+        };
+      }),
+    );
+
+    return res.status(200).json({
+      assessment: row,
+      securitySettings: securitySettings.rows[0],
+      questions: questionsWithOptions,
+    });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to get assessment by id" });
+  }
+}

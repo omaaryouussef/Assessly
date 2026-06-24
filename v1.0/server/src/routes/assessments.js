@@ -8,6 +8,8 @@ import {
   toggleAssessmentClose,
   deleteAssessment,
   createAssessment,
+  getAssessmentById,
+  updateAssessment,
 } from "../handlers/assessmentHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
@@ -44,6 +46,20 @@ assessmentsRouter.post(
   authenticate,
   authorize("INSTRUCTOR", "TA"),
   createAssessment,
+);
+
+assessmentsRouter.put(
+  "/:assessmentId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA"),
+  updateAssessment,
+);
+
+assessmentsRouter.get(
+  "/:assessmentId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA", "STUDENT"),
+  getAssessmentById,
 );
 
 export default assessmentsRouter;

@@ -1,5 +1,4 @@
-import React from 'react'
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -10,12 +9,14 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../components/auth/AuthWrapper'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function AssessmentStudioPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const assessmentType = location.state?.assessmentType || ''
+  const assessmentToEdit = location.state?.assessmentToEdit || null
   const { courseId } = useParams()
   const { token } = useAuth()
   // Assessment specifications
@@ -45,7 +46,6 @@ function AssessmentStudioPage() {
   const [showDiscardModal, setShowDiscardModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
 
-
   const handleSaveQuestion = () => {
     if (!qType || !qPrompt || !qMaxGrade) {
       setQuestionErr('All fields are required')
@@ -74,7 +74,10 @@ function AssessmentStudioPage() {
         )
       )
     } else {
-      setQuestionsList([...questionsList, { id: Date.now(), ...questionData }])
+      setQuestionsList([
+        ...questionsList,
+        { id: `new-${crypto.randomUUID()}`, ...questionData },
+      ])
     }
 
     resetQForm()
@@ -262,13 +265,14 @@ function AssessmentStudioPage() {
       return
     }
 
-    let totalPoints = 0;
+    let totalPoints = 0
     for (const question of questionsList) {
       totalPoints += Number(question.qMaxGrade)
-      
     }
     if (totalPoints !== Number(maxGrade)) {
-      setAssessmentErr('Total sum of question points must be equal to the max grade.')
+      setAssessmentErr(
+        'Total sum of question points must be equal to the max grade.'
+      )
       return
     }
 
@@ -297,11 +301,12 @@ function AssessmentStudioPage() {
         body: JSON.stringify(assessmentPayload),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Failed to create assessment')
-      setShowSuccessModal(true);
+      if (!response.ok)
+        throw new Error(data.error || 'Failed to create assessment')
+      setShowSuccessModal(true)
     } catch (error) {
       console.error('Failed to create assessment', error)
-      setAssessmentErr(error.message || 'Failed to create assessment');
+      setAssessmentErr(error.message || 'Failed to create assessment')
     }
   }
 
@@ -333,8 +338,124 @@ function AssessmentStudioPage() {
     setClipboardAccess(false)
     setScreenSnapshot(false)
     setQuestionStats(false)
-    //navigate to the assignments page for now
-    navigate(`/course/${courseId}/assignments`)
+    let path =
+      type === 'ASSIGNMENT'
+        ? `/course/${courseId}/assignments`
+        : type === 'EXAM'
+          ? `/course/${courseId}/exams`
+          : `/course/${courseId}/quizzes`
+    navigate(path)
+  }
+
+  const handleEditAssessment = () => {
+    if (!assessmentToEdit) return
+    const fetchAssessment = async () => {
+      const response = await fetch(
+        `${API_BASE}/api/assessments/${assessmentToEdit.assessment_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      const data = await response.json()
+      console.log("data: ", data);
+      setTitle(data.assessment.title)
+      setType(data.assessment.assess_type)
+      setDuration(data.assessment.duration)
+      setMaxGrade(data.assessment.max_grade)
+      setDueDate(data.assessment.due_date ? data.assessment.due_date.split('T')[0] : '')
+      setWindowSwitching(data.securitySettings.windowswitching)
+      setClipboardAccess(data.securitySettings.clipboardaccess)
+      setScreenSnapshot(data.securitySettings.screensnapshot)
+      setQuestionStats(data.securitySettings.questionstats)
+      setQuestionsList(
+        data.questions.map((question) => ({
+          id: question.question_id,
+          qType: question.question_type,
+          qPrompt: question.prompt,
+          qMaxGrade: question.max_grade,
+          progLang: question.prog_lang,
+          options: question.options || [],
+        }))
+      )
+    }
+    fetchAssessment()
+  }
+
+  useEffect(() => {
+    if (assessmentToEdit) {
+      handleEditAssessment()
+    }
+  }, [assessmentToEdit])
+
+
+  const handleUpdateAssessment = async (e) => {
+    e.preventDefault()
+    setAssessmentErr('')
+    if (!title || !type || !maxGrade || !dueDate) {
+      setAssessmentErr('All Assessment details are required')
+      return
+    }
+
+    if ((type === 'EXAM' || type === 'QUIZ') && !duration) {
+      setAssessmentErr('Duration is required for timed assessments')
+      return
+    }
+
+    if (questionsList.length === 0) {
+      setAssessmentErr('At least one question is required')
+      return
+    }
+
+    if (dueDate < new Date().toISOString().split('T')[0]) {
+      setAssessmentErr('Due date must be in the future')
+      return
+    }
+
+    let totalPoints = 0
+    for (const question of questionsList) {
+      totalPoints += Number(question.qMaxGrade)
+    }
+    if (totalPoints !== Number(maxGrade)) {
+      setAssessmentErr(
+        'Total sum of question points must be equal to the max grade.'
+      )
+      return
+    }
+
+    const assessmentPayload = {
+      title,
+      type,
+      duration,
+      maxGrade,
+      dueDate,
+      securitySettings: {
+        windowSwitching,
+        clipboardAccess,
+        screenSnapshot,
+        questionStats,
+      },
+      questions: questionsList,
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/assessments/${assessmentToEdit.assessment_id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(assessmentPayload),
+      })
+      const data = await response.json()
+      if (!response.ok)
+        throw new Error(data.error || 'Failed to update assessment')
+      setShowSuccessModal(true)
+    } catch (error) {
+      console.error('Failed to update assessment', error)
+      setAssessmentErr(error.message || 'Failed to update assessment')
+    }
   }
 
   const isFormOpen = activeQuestionForm !== null
@@ -424,7 +545,7 @@ function AssessmentStudioPage() {
               type="checkbox"
               id="window-switching"
               name="window-switching"
-              value={windowSwitching}
+              checked={windowSwitching}
               onChange={(e) => setWindowSwitching(e.target.checked)}
             />
           </div>
@@ -434,7 +555,7 @@ function AssessmentStudioPage() {
               type="checkbox"
               id="clipboard-access"
               name="clipboard-access"
-              value={clipboardAccess}
+              checked={clipboardAccess}
               onChange={(e) => setClipboardAccess(e.target.checked)}
             />
           </div>
@@ -444,7 +565,7 @@ function AssessmentStudioPage() {
               type="checkbox"
               id="screen-snapshot"
               name="screen-snapshot"
-              value={screenSnapshot}
+              checked={screenSnapshot}
               onChange={(e) => setScreenSnapshot(e.target.checked)}
             />
           </div>
@@ -454,7 +575,7 @@ function AssessmentStudioPage() {
               type="checkbox"
               id="question-stats"
               name="question-stats"
-              value={questionStats}
+              checked={questionStats}
               onChange={(e) => setQuestionStats(e.target.checked)}
             />
           </div>
@@ -529,7 +650,7 @@ function AssessmentStudioPage() {
                             <p>{question.progLang}</p>
                           </>
                         )}
-                        {question.options.length > 0 && (
+                        {question.question_type === 'MCQ' && question.options.length > 0 && (
                           <>
                             <strong>Options:</strong>
                             <ul>
@@ -539,7 +660,7 @@ function AssessmentStudioPage() {
                             </ul>
                           </>
                         )}
-                      </div>
+                      </div>  
                     )}
                   </div>
                 )
@@ -565,9 +686,9 @@ function AssessmentStudioPage() {
         <button
           type="submit"
           className="submit-btn"
-          onClick={handleSaveAssessment}
+          onClick={assessmentToEdit ? handleUpdateAssessment : handleSaveAssessment}
         >
-          Save Assessment
+          {assessmentToEdit ? 'Update Assessment' : 'Save Assessment'}
         </button>
         <button
           type="button"
@@ -612,12 +733,23 @@ function AssessmentStudioPage() {
               type="button"
               className="success-modal-btn"
               onClick={() => {
-                let path = type === 'ASSIGNMENT' ? `/course/${courseId}/assignments` : type === 'EXAM' ? `/course/${courseId}/exams` : `/course/${courseId}/quizzes`;
+                let path =
+                  type === 'ASSIGNMENT'
+                    ? `/course/${courseId}/assignments`
+                    : type === 'EXAM'
+                      ? `/course/${courseId}/exams`
+                      : `/course/${courseId}/quizzes`
                 navigate(path)
                 setShowSuccessModal(false)
               }}
             >
-              Go to {type === 'ASSIGNMENT' ? 'Assignments' : type === 'EXAM' ? 'Exams' : 'Quizzes'} Page
+              Go to{' '}
+              {type === 'ASSIGNMENT'
+                ? 'Assignments'
+                : type === 'EXAM'
+                  ? 'Exams'
+                  : 'Quizzes'}{' '}
+              Page
             </button>
           </div>
         </div>

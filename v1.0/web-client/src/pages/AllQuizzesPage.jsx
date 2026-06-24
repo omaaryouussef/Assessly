@@ -448,6 +448,7 @@ function AllQuizzesPage() {
 
   const handleConfirmEdit = () => {
     if (!quizToEdit) return
+    navigate(`/course/${courseId}/assessment-studio`, {state: {assessmentToEdit: quizToEdit}})
   }
 
   const handleConfirmDelete = async () => {
