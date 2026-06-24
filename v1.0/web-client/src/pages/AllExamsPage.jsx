@@ -446,6 +446,7 @@ function AllExamsPage() {
 
   const handleConfirmEdit = () => {
     if (!examToEdit) return
+    navigate(`/course/${courseId}/assessment-studio`, {state: {assessmentToEdit: examToEdit}})
   }
 
   const handleConfirmDelete = async () => {
@@ -785,14 +786,14 @@ function AllExamsPage() {
               >
                 Cancel
               </button>
+              <button
+                type="button"
+                className="remove-modal-btn remove-modal-btn--confirm-primary"
+                onClick={handleConfirmEdit}
+              >
+                Edit Exam
+              </button>
             </div>
-            <button
-              type="button"
-              className="remove-modal-btn remove-modal-btn--confirm-primary"
-              onClick={handleConfirmEdit}
-            >
-              Edit Exam
-            </button>
           </div>
         </div>
       )}

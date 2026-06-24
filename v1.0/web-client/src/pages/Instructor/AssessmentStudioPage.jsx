@@ -89,7 +89,7 @@ function AssessmentStudioPage() {
     setQPrompt(question.qPrompt)
     setQMaxGrade(question.qMaxGrade)
     setprogLang(question.progLang || '')
-    setOptions([...question.options])
+    setOptions([...(question.options || [])])
     setQuestionErr('')
   }
 
@@ -192,10 +192,10 @@ function AssessmentStudioPage() {
             Add Option
           </button>
           {options.length > 0 && (
-            <div className="form-group">
+            <div className="form-group mcq-options-panel">
               <label htmlFor={`${idPrefix}-question-options`}>Options</label>
               {options.map((option, index) => (
-                <div key={index} className="form-group">
+                <div key={index} className="mcq-option-row">
                   <input
                     type="text"
                     id={`${idPrefix}-question-options-${index}`}
@@ -213,6 +213,7 @@ function AssessmentStudioPage() {
                     onClick={() => {
                       setOptions(options.filter((_, i) => i !== index))
                     }}
+                    aria-label={`Delete option ${index + 1}`}
                   >
                     <FontAwesomeIcon icon={faTrash} />
                   </button>
@@ -650,15 +651,18 @@ function AssessmentStudioPage() {
                             <p>{question.progLang}</p>
                           </>
                         )}
-                        {question.question_type === 'MCQ' && question.options.length > 0 && (
-                          <>
+                        {question.qType === 'MCQ' &&
+                          (question.options || []).length > 0 && (
+                          <div className="question-row-options">
                             <strong>Options:</strong>
                             <ul>
-                              {question.options.map((option, optionIndex) => (
-                                <li key={optionIndex}>{option}</li>
-                              ))}
+                              {(question.options || []).map(
+                                (option, optionIndex) => (
+                                  <li key={optionIndex}>{option}</li>
+                                ),
+                              )}
                             </ul>
-                          </>
+                          </div>
                         )}
                       </div>  
                     )}
@@ -726,8 +730,12 @@ function AssessmentStudioPage() {
       {showSuccessModal && (
         <div className="success-modal-backdrop">
           <div className="success-modal">
-            <h3>Assessment Created</h3>
-            <p>Assessment has been created successfully.</p>
+            <h3>{assessmentToEdit ? 'Assessment Updated' : 'Assessment Created'}</h3>
+            {assessmentToEdit ? (
+              <p>Assessment has been updated successfully.</p>
+            ) : (
+              <p>Assessment has been created successfully.</p>
+            )}
 
             <button
               type="button"

@@ -214,6 +214,9 @@ function AllAssignmentsPage() {
   // to do: handle the editing in the assessment studio after I finish it.
   const handleConfirmEdit = () => {
     if (!assignmentToEdit) return
+    navigate(`/course/${courseId}/assessment-studio`, {
+      state: { assessmentToEdit: assignmentToEdit },
+    })
   }
 
   const handleConfirmDelete = async () => {
@@ -253,10 +256,18 @@ function AllAssignmentsPage() {
 
       {canManage && (
         <div className="assignments-toolbar">
-            <button type="button" className="create-assignment-button" onClick={() => navigate(`/course/${courseId}/assessment-studio`, {state: {assessmentType: 'ASSIGNMENT'}})}>
-              <FontAwesomeIcon icon={faPlus} />
-              <span>Create Assignment</span>
-            </button>
+          <button
+            type="button"
+            className="create-assignment-button"
+            onClick={() =>
+              navigate(`/course/${courseId}/assessment-studio`, {
+                state: { assessmentType: 'ASSIGNMENT' },
+              })
+            }
+          >
+            <FontAwesomeIcon icon={faPlus} />
+            <span>Create Assignment</span>
+          </button>
         </div>
       )}
 
@@ -341,9 +352,7 @@ function AllAssignmentsPage() {
               <button
                 type="button"
                 className="remove-modal-btn remove-modal-btn--confirm-primary"
-                onClick={() =>
-                  navigate(`/course/${courseId}/assessment-studio`)
-                }
+                onClick={() => handleConfirmEdit()}
               >
                 Yes
               </button>
