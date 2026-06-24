@@ -38,7 +38,7 @@ function QuizRow({
   setQuizToDelete,
 }) {
   const icon = QUIZ_ICONS[quiz.question_type] ?? faFile
-
+  const isPublished = quiz.is_published;
   return (
     <div className="assignment-row">
       <div className="assignment-row-icon" aria-hidden="true">
@@ -52,17 +52,19 @@ function QuizRow({
         </p>
         {canManage && (
           <div className="assignment-row-action-buttons">
-            <button
-              type="button"
-              className="assignment-row-action-btn assignment-row-action-btn--edit"
-              aria-label={`Edit ${quiz.title}`}
-              onClick={() => {
-                setShowEditModal(true)
-                setQuizToEdit(quiz)
-              }}
-            >
-              <FontAwesomeIcon icon={faPen} />
-            </button>
+            {!isPublished && (
+              <button
+                type="button"
+                className="assignment-row-action-btn assignment-row-action-btn--edit"
+                aria-label={`Edit ${quiz.title}`}
+                onClick={() => {
+                  setShowEditModal(true)
+                  setQuizToEdit(quiz)
+                }}
+              >
+                <FontAwesomeIcon icon={faPen} />
+              </button>
+            )}
             <button
               type="button"
               className="assignment-row-action-btn assignment-row-action-btn--delete"

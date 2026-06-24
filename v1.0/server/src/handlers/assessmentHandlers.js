@@ -84,6 +84,7 @@ export const getAssignmentsByCourseId = async (req, res) => {
 };
 
 async function getTimedAssessmentsByCourseId(req, res, assessType) {
+  console.log("assessType: ", assessType);
   const { courseId } = req.params;
   const { user_id: userId, role } = req.user;
   const label = assessType === "QUIZ" ? "quizzes" : "exams";

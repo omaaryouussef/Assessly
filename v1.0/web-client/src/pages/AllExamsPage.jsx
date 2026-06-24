@@ -38,6 +38,7 @@ function ExamRow({
   setExamToDelete,
 }) {
   const icon = EXAM_ICONS[exam.question_type] ?? faFile
+  const isPublished = exam.is_published;
 
   return (
     <div className="assignment-row">
@@ -52,17 +53,19 @@ function ExamRow({
         </p>
         {canManage && (
           <div className="assignment-row-action-buttons">
+            {!isPublished && (
             <button
               type="button"
               className="assignment-row-action-btn assignment-row-action-btn--edit"
               aria-label={`Edit ${exam.title}`}
               onClick={() => {
-                setShowEditModal(true)
-                setExamToEdit(exam)
-              }}
-            >
-              <FontAwesomeIcon icon={faPen} />
-            </button>
+                  setShowEditModal(true)
+                  setExamToEdit(exam)
+                }}
+              >
+                <FontAwesomeIcon icon={faPen} />
+              </button>
+            )}
             <button
               type="button"
               className="assignment-row-action-btn assignment-row-action-btn--delete"

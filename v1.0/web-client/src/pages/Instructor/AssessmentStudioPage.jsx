@@ -257,6 +257,21 @@ function AssessmentStudioPage() {
       return
     }
 
+    if (dueDate < new Date().toISOString().split('T')[0]) {
+      setAssessmentErr('Due date must be in the future')
+      return
+    }
+
+    let totalPoints = 0;
+    for (const question of questionsList) {
+      totalPoints += Number(question.qMaxGrade)
+      
+    }
+    if (totalPoints !== Number(maxGrade)) {
+      setAssessmentErr('Total sum of question points must be equal to the max grade.')
+      return
+    }
+
     const assessmentPayload = {
       title,
       type,
@@ -366,13 +381,14 @@ function AssessmentStudioPage() {
           </div>
           {(type === 'EXAM' || type === 'QUIZ') && (
             <div className="form-group">
-              <label htmlFor="duration">Duration</label>
+              <label htmlFor="duration">Duration (in minutes)</label>
               <input
                 type="number"
                 id="duration"
                 name="duration"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
+                placeholder="Enter duration in minutes"
               />
             </div>
           )}
@@ -596,11 +612,12 @@ function AssessmentStudioPage() {
               type="button"
               className="success-modal-btn"
               onClick={() => {
+                let path = type === 'ASSIGNMENT' ? `/course/${courseId}/assignments` : type === 'EXAM' ? `/course/${courseId}/exams` : `/course/${courseId}/quizzes`;
+                navigate(path)
                 setShowSuccessModal(false)
-                navigate(`/course/${courseId}/assignments`)
               }}
             >
-              Go to Assignments
+              Go to {type === 'ASSIGNMENT' ? 'Assignments' : type === 'EXAM' ? 'Exams' : 'Quizzes'} Page
             </button>
           </div>
         </div>
