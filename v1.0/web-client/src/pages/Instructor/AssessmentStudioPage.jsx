@@ -313,20 +313,6 @@ function AssessmentStudioPage() {
 
   const handleDiscardAssessment = () => {
     setShowDiscardModal(false)
-    setFormData({
-      title: '',
-      type: '',
-      duration: 0,
-      maxGrade: 0,
-      dueDate: '',
-      securitySettings: {
-        windowSwitching: false,
-        clipboardAccess: false,
-        screenSnapshot: false,
-        questionStats: false,
-      },
-      questions: [],
-    })
     setQuestionsList([])
     setActiveQuestionForm(null)
     setQType('')
