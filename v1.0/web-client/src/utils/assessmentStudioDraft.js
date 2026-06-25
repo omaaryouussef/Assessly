@@ -5,7 +5,6 @@ export function isDraftEmpty(draft) {
 
   const hasContent =
     Boolean(draft.title?.trim()) ||
-    Boolean(draft.type) ||
     Boolean(draft.dueDate) ||
     Number(draft.maxGrade) > 0 ||
     Number(draft.duration) > 0 ||

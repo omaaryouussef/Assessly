@@ -28,7 +28,6 @@ function AssessmentStudioPage() {
 
   // Draft management
   const draftSnapshotRef = useRef(null)
-  const lastInitKeyRef = useRef(null)
   const skipDraftPersistRef = useRef(false)
   const [draftResolved, setDraftResolved] = useState(false)
   const [showDraftModal, setShowDraftModal] = useState(false)
@@ -191,10 +190,6 @@ function AssessmentStudioPage() {
   }, [assessmentToEdit, assessmentType, loadAssessmentForEdit])
 
   useEffect(() => {
-    const initToken = `${location.key}:${courseId}`
-    if (lastInitKeyRef.current === initToken) return
-
-    lastInitKeyRef.current = initToken
     let active = true
     skipDraftPersistRef.current = false
 
@@ -222,7 +217,14 @@ function AssessmentStudioPage() {
       const enteredFromSidebar = location.state?.fromSidebar === true
 
       if (!hasDraft) {
-        await applyNavIntent()
+        try {
+          await applyNavIntent()
+        } catch (error) {
+          console.error('Failed to initialize assessment studio', error)
+          if (active) {
+            setAssessmentErr(error.message || 'Failed to load assessment')
+          }
+        }
         if (active) setDraftResolved(true)
         return
       }
@@ -233,11 +235,13 @@ function AssessmentStudioPage() {
         return
       }
 
-      setPendingDraft(savedDraft)
-      setShowDraftModal(true)
+      if (active) {
+        setPendingDraft(savedDraft)
+        setShowDraftModal(true)
+      }
     }
 
-    initializeStudio()
+    void initializeStudio()
 
     return () => {
       active = false
