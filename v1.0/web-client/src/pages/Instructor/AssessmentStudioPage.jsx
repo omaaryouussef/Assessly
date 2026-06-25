@@ -29,6 +29,7 @@ function AssessmentStudioPage() {
   // Draft management
   const draftSnapshotRef = useRef(null)
   const lastInitKeyRef = useRef(null)
+  const skipDraftPersistRef = useRef(false)
   const [draftResolved, setDraftResolved] = useState(false)
   const [showDraftModal, setShowDraftModal] = useState(false)
   const [pendingDraft, setPendingDraft] = useState(null)
@@ -195,6 +196,21 @@ function AssessmentStudioPage() {
 
     lastInitKeyRef.current = initToken
     let active = true
+    skipDraftPersistRef.current = false
+
+    const applyNavIntent = async () => {
+      const toEdit = location.state?.assessmentToEdit
+      const navType = location.state?.assessmentType || ''
+
+      if (toEdit?.assessment_id) {
+        await loadAssessmentForEdit(toEdit.assessment_id)
+        return
+      }
+
+      if (navType) {
+        setType(navType)
+      }
+    }
 
     const initializeStudio = async () => {
       setDraftResolved(false)
@@ -206,7 +222,7 @@ function AssessmentStudioPage() {
       const enteredFromSidebar = location.state?.fromSidebar === true
 
       if (!hasDraft) {
-        await applyNavigationIntent()
+        await applyNavIntent()
         if (active) setDraftResolved(true)
         return
       }
@@ -226,13 +242,13 @@ function AssessmentStudioPage() {
     return () => {
       active = false
     }
-  }, [applyDraft, applyNavigationIntent, courseId, location.key])
+  }, [applyDraft, courseId, loadAssessmentForEdit, location.key])
 
   draftSnapshotRef.current = buildDraftSnapshot()
 
   useEffect(() => {
     return () => {
-      if (!courseId) return
+      if (!courseId || skipDraftPersistRef.current) return
       const snapshot = draftSnapshotRef.current
       if (snapshot && !isDraftEmpty(snapshot)) {
         saveDraft(courseId, snapshot)
@@ -241,7 +257,7 @@ function AssessmentStudioPage() {
   }, [courseId])
 
   useEffect(() => {
-    if (!draftResolved || showDraftModal) return
+    if (!draftResolved || showDraftModal || skipDraftPersistRef.current) return
 
     const snapshot = buildDraftSnapshot()
     if (!isDraftEmpty(snapshot)) {
@@ -533,6 +549,7 @@ function AssessmentStudioPage() {
       const data = await response.json()
       if (!response.ok)
         throw new Error(data.error || 'Failed to create assessment')
+      skipDraftPersistRef.current = true
       clearDraft(courseId)
       setShowSuccessModal(true)
     } catch (error) {
@@ -549,6 +566,7 @@ function AssessmentStudioPage() {
         : type === 'EXAM'
           ? `/course/${courseId}/exams`
           : `/course/${courseId}/quizzes`
+    skipDraftPersistRef.current = true
     clearDraft(courseId)
     resetFormState()
     navigate(path)
@@ -618,6 +636,7 @@ function AssessmentStudioPage() {
       const data = await response.json()
       if (!response.ok)
         throw new Error(data.error || 'Failed to update assessment')
+      skipDraftPersistRef.current = true
       clearDraft(courseId)
       setShowSuccessModal(true)
     } catch (error) {
@@ -957,6 +976,7 @@ function AssessmentStudioPage() {
                     : type === 'EXAM'
                       ? `/course/${courseId}/exams`
                       : `/course/${courseId}/quizzes`
+                skipDraftPersistRef.current = true
                 clearDraft(courseId)
                 navigate(path)
                 setShowSuccessModal(false)

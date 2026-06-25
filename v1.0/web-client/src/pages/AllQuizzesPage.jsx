@@ -36,11 +36,12 @@ function QuizRow({
   setShowDeleteModal,
   setQuizToEdit,
   setQuizToDelete,
+  onRowClick,
 }) {
   const icon = QUIZ_ICONS[quiz.question_type] ?? faFile
   const isPublished = quiz.is_published;
   return (
-    <div className="assignment-row">
+    <div className="assignment-row" onClick={onRowClick}>
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>
@@ -492,7 +493,6 @@ function AllQuizzesPage() {
             </button>
         </div>
       )}
-
       {quizzesList.length > 0 ? (
         <div className="assignments-list-card">
           {quizzesList.map((quiz) => (
@@ -510,6 +510,12 @@ function AllQuizzesPage() {
               setShowDeleteModal={setShowDeleteModal}
               setQuizToEdit={setQuizToEdit}
               setQuizToDelete={setQuizToDelete}
+              onRowClick = {
+                user?.role === 'STUDENT' ? () => {
+                  navigate(`/course/${courseId}/take-assessment` , {
+                    state: {assessmentToTake: quiz}})
+                } : undefined
+              }
             />
           ))}
         </div>

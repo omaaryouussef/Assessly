@@ -64,6 +64,7 @@ async function upsertStudentAccess(studentId, assessmentId, canAccess) {
 
 export const getAssignmentsByCourseId = async (req, res) => {
   const { courseId } = req.params;
+  const { user_id: userId, role } = req.user;
   try {
     const existCourse = await db.query(
       "SELECT * FROM course WHERE course_id = $1",
@@ -71,6 +72,26 @@ export const getAssignmentsByCourseId = async (req, res) => {
     );
     if (existCourse.rows.length === 0) {
       return res.status(404).json({ error: "Course not found" });
+    }
+
+    if (role === "STUDENT") {
+      const result = await db.query(
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration,
+                a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
+                (sa_sub.id IS NOT NULL) AS has_submitted
+         FROM assessment a
+         INNER JOIN student_access_assessments saa ON saa.assessment_id = a.assessment_id
+         LEFT JOIN student_assessment sa_sub
+           ON sa_sub.assessment_id = a.assessment_id
+          AND sa_sub.student_id = $2
+         WHERE a.course_id = $1
+           AND a.assess_type = 'ASSIGNMENT'
+           AND saa.student_id = $2
+           AND saa.can_access = true
+           AND a.is_published = true`,
+        [courseId, userId],
+      );
+      return res.status(200).json(result.rows.map(mapQuiz));
     }
     const result = await db.query(
       "SELECT * FROM assessment WHERE course_id = $1 AND assess_type = 'ASSIGNMENT'",
@@ -234,6 +255,11 @@ export const toggleAssessmentPublish = async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    const students = await db.query(
+      "SELECT student_id FROM student_course WHERE course_id = $1",
+      [courseId],
+    );
+
     if (TIMED_ASSESSMENT_TYPES.has(row.assess_type) && is_published === true) {
       if (publish_mode !== "all" && publish_mode !== "selected") {
         return res.status(400).json({
@@ -251,11 +277,6 @@ export const toggleAssessmentPublish = async (req, res) => {
         );
 
         if (publish_mode === "all") {
-          const students = await db.query(
-            "SELECT student_id FROM student_course WHERE course_id = $1",
-            [courseId],
-          );
-
           for (const student of students.rows) {
             await upsertStudentAccess(student.student_id, assessmentId, true);
           }
@@ -298,6 +319,7 @@ export const toggleAssessmentPublish = async (req, res) => {
          WHERE a.assessment_id = $1`,
         [assessmentId],
       );
+      
 
       return res.status(200).json(mapQuiz(updated.rows[0]));
     }
@@ -309,6 +331,10 @@ export const toggleAssessmentPublish = async (req, res) => {
        RETURNING assessment_id, title, max_grade, is_published, duration, is_closed`,
       [is_published, assessmentId],
     );
+
+    for (const student of students.rows) {
+      await upsertStudentAccess(student.student_id, assessmentId, true);
+    }
 
     if (TIMED_ASSESSMENT_TYPES.has(row.assess_type)) {
       const withType = await db.query(
@@ -493,20 +519,28 @@ export const createAssessment = async (req, res) => {
 
 export const updateAssessment = async (req, res) => {
   const { assessmentId } = req.params;
-  const { title, duration, maxGrade, dueDate, type, securitySettings, questions } = req.body;
+  const {
+    title,
+    duration,
+    maxGrade,
+    dueDate,
+    type,
+    securitySettings,
+    questions,
+  } = req.body;
   const { user_id: userId, role } = req.user;
 
   const isDbQuestionId = (id) => {
     const numericId = Number(id);
     return (
-      Number.isInteger(numericId) &&
-      numericId > 0 &&
-      numericId <= 2147483647
+      Number.isInteger(numericId) && numericId > 0 && numericId <= 2147483647
     );
   };
 
   const upsertQuestionChoices = async (question) => {
-    await db.query("DELETE FROM choice WHERE question_id = $1", [question.questionId]);
+    await db.query("DELETE FROM choice WHERE question_id = $1", [
+      question.questionId,
+    ]);
 
     if (question.qType !== "MCQ") {
       return;
@@ -521,7 +555,10 @@ export const updateAssessment = async (req, res) => {
   };
 
   try {
-    const assessment = await db.query("SELECT * FROM assessment WHERE assessment_id = $1", [assessmentId]);
+    const assessment = await db.query(
+      "SELECT * FROM assessment WHERE assessment_id = $1",
+      [assessmentId],
+    );
     if (assessment.rows.length === 0) {
       return res.status(404).json({ error: "Assessment not found" });
     }
@@ -595,8 +632,12 @@ export const updateAssessment = async (req, res) => {
 
     for (const existingQuestionId of existingQuestionIds) {
       if (!keptQuestionIds.has(existingQuestionId)) {
-        await db.query("DELETE FROM choice WHERE question_id = $1", [existingQuestionId]);
-        await db.query("DELETE FROM question WHERE question_id = $1", [existingQuestionId]);
+        await db.query("DELETE FROM choice WHERE question_id = $1", [
+          existingQuestionId,
+        ]);
+        await db.query("DELETE FROM question WHERE question_id = $1", [
+          existingQuestionId,
+        ]);
       }
     }
 
@@ -617,18 +658,25 @@ export const updateAssessment = async (req, res) => {
   }
 };
 
-
-
 export const getAssessmentById = async (req, res) => {
   const { assessmentId } = req.params;
   try {
-    const assessment = await db.query("SELECT * FROM assessment WHERE assessment_id = $1", [assessmentId]);
+    const assessment = await db.query(
+      "SELECT * FROM assessment WHERE assessment_id = $1",
+      [assessmentId],
+    );
     if (assessment.rows.length === 0) {
       return res.status(404).json({ error: "Assessment not found" });
     }
     const row = assessment.rows[0];
-    const securitySettings = await db.query("SELECT * FROM security_settings WHERE assessment_id = $1", [assessmentId]);
-    const questions = await db.query("SELECT * FROM question WHERE assessment_id = $1", [assessmentId]);
+    const securitySettings = await db.query(
+      "SELECT * FROM security_settings WHERE assessment_id = $1",
+      [assessmentId],
+    );
+    const questions = await db.query(
+      "SELECT * FROM question WHERE assessment_id = $1",
+      [assessmentId],
+    );
 
     const questionsWithOptions = await Promise.all(
       questions.rows.map(async (question) => {
@@ -657,4 +705,4 @@ export const getAssessmentById = async (req, res) => {
     console.log("Error: ", error);
     return res.status(500).json({ error: "Failed to get assessment by id" });
   }
-}
+};

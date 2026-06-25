@@ -36,12 +36,13 @@ function ExamRow({
   setShowDeleteModal,
   setExamToEdit,
   setExamToDelete,
+  onRowClick,
 }) {
   const icon = EXAM_ICONS[exam.question_type] ?? faFile
   const isPublished = exam.is_published;
 
   return (
-    <div className="assignment-row">
+    <div className="assignment-row" onClick={onRowClick}>
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>
@@ -509,6 +510,12 @@ function AllExamsPage() {
               setShowDeleteModal={setShowDeleteModal}
               setExamToEdit={setExamToEdit}
               setExamToDelete={setExamToDelete}
+              onRowClick = {
+                user?.role === 'STUDENT' ? () => {
+                  navigate(`/course/${courseId}/take-assessment` , {
+                    state: {assessmentToTake: exam}})
+                } : undefined
+              }
             />
           ))}
         </div>

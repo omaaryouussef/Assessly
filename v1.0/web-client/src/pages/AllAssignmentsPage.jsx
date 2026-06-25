@@ -34,6 +34,7 @@ function AssignmentRow({
   setShowDeleteModal,
   setAssignmentToEdit,
   setAssignmentToDelete,
+  onRowClick,
 }) {
   const icon = ASSIGNMENT_ICONS[assignment.question_type] ?? faFile
   const dueDate = assignment.due_date
@@ -44,7 +45,7 @@ function AssignmentRow({
     : ''
   const isPastDue = currentDateTime > new Date(assignment.due_date)
   return (
-    <div className="assignment-row">
+    <div className="assignment-row" onClick={onRowClick}>
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>
@@ -276,6 +277,7 @@ function AllAssignmentsPage() {
           {assignmentsList
             .filter((assignment) => canManage || assignment.is_published)
             .map((assignment) => (
+              
               <AssignmentRow
                 key={assignment.assessment_id}
                 assignment={assignment}
@@ -287,6 +289,14 @@ function AllAssignmentsPage() {
                 setShowDeleteModal={setShowDeleteModal}
                 setAssignmentToEdit={setAssignmentToEdit}
                 setAssignmentToDelete={setAssignmentToDelete}
+                onRowClick={
+                  user?.role === 'STUDENT'
+                    ? () =>
+                        navigate(`/course/${courseId}/take-assessment`, {
+                          state: { assessmentToTake: assignment },
+                        })
+                    : undefined
+                }
               />
             ))}
         </div>
