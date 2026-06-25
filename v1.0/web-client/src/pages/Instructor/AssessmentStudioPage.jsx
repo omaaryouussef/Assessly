@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -8,6 +8,12 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../components/auth/AuthWrapper'
+import {
+  clearDraft,
+  isDraftEmpty,
+  loadDraft,
+  saveDraft,
+} from '../../utils/assessmentStudioDraft'
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
@@ -19,6 +25,14 @@ function AssessmentStudioPage() {
   const assessmentToEdit = location.state?.assessmentToEdit || null
   const { courseId } = useParams()
   const { token } = useAuth()
+
+  // Draft management
+  const draftSnapshotRef = useRef(null)
+  const lastInitKeyRef = useRef(null)
+  const [draftResolved, setDraftResolved] = useState(false)
+  const [showDraftModal, setShowDraftModal] = useState(false)
+  const [pendingDraft, setPendingDraft] = useState(null)
+  const [editingAssessment, setEditingAssessment] = useState(assessmentToEdit)
   // Assessment specifications
   const [title, setTitle] = useState('')
   const [duration, setDuration] = useState(0)
@@ -45,6 +59,221 @@ function AssessmentStudioPage() {
   const [questionErr, setQuestionErr] = useState('')
   const [showDiscardModal, setShowDiscardModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+
+  const resetFormState = () => {
+    setTitle('')
+    setDuration(0)
+    setType('')
+    setMaxGrade(0)
+    setDueDate('')
+    setWindowSwitching(false)
+    setClipboardAccess(false)
+    setScreenSnapshot(false)
+    setQuestionStats(false)
+    setQuestionsList([])
+    setActiveQuestionForm(null)
+    setQType('')
+    setQPrompt('')
+    setQMaxGrade(0)
+    setprogLang('')
+    setOptions([])
+    setQuestionErr('')
+    setAssessmentErr('')
+    setEditingAssessment(null)
+  }
+
+  const buildDraftSnapshot = useCallback(
+    () => ({
+      title,
+      duration,
+      type,
+      maxGrade,
+      dueDate,
+      windowSwitching,
+      clipboardAccess,
+      screenSnapshot,
+      questionStats,
+      questionsList,
+      editingAssessmentId: editingAssessment?.assessment_id ?? null,
+    }),
+    [
+      title,
+      duration,
+      type,
+      maxGrade,
+      dueDate,
+      windowSwitching,
+      clipboardAccess,
+      screenSnapshot,
+      questionStats,
+      questionsList,
+      editingAssessment,
+    ]
+  )
+
+  const applyDraft = useCallback((draft) => {
+    setTitle(draft.title || '')
+    setDuration(draft.duration ?? 0)
+    setType(draft.type || '')
+    setMaxGrade(draft.maxGrade ?? 0)
+    setDueDate(draft.dueDate || '')
+    setWindowSwitching(Boolean(draft.windowSwitching))
+    setClipboardAccess(Boolean(draft.clipboardAccess))
+    setScreenSnapshot(Boolean(draft.screenSnapshot))
+    setQuestionStats(Boolean(draft.questionStats))
+    setQuestionsList(draft.questionsList || [])
+    setEditingAssessment(
+      draft.editingAssessmentId
+        ? { assessment_id: draft.editingAssessmentId }
+        : null
+    )
+    setActiveQuestionForm(null)
+    setQType('')
+    setQPrompt('')
+    setQMaxGrade(0)
+    setprogLang('')
+    setOptions([])
+    setQuestionErr('')
+    setAssessmentErr('')
+  }, [])
+
+  const loadAssessmentForEdit = useCallback(
+    async (assessmentId) => {
+      const response = await fetch(
+        `${API_BASE}/api/assessments/${assessmentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load assessment')
+      }
+
+      setTitle(data.assessment.title)
+      setType(data.assessment.assess_type)
+      setDuration(data.assessment.duration)
+      setMaxGrade(data.assessment.max_grade)
+      setDueDate(
+        data.assessment.due_date ? data.assessment.due_date.split('T')[0] : ''
+      )
+      setWindowSwitching(data.securitySettings.windowswitching)
+      setClipboardAccess(data.securitySettings.clipboardaccess)
+      setScreenSnapshot(data.securitySettings.screensnapshot)
+      setQuestionStats(data.securitySettings.questionstats)
+      setQuestionsList(
+        data.questions.map((question) => ({
+          id: question.question_id,
+          qType: question.question_type,
+          qPrompt: question.prompt,
+          qMaxGrade: question.max_grade,
+          progLang: question.prog_lang,
+          options: question.options || [],
+        }))
+      )
+      setEditingAssessment({ assessment_id: assessmentId })
+    },
+    [token]
+  )
+
+  const applyNavigationIntent = useCallback(async () => {
+    if (assessmentToEdit?.assessment_id) {
+      await loadAssessmentForEdit(assessmentToEdit.assessment_id)
+      return
+    }
+
+    if (assessmentType) {
+      setType(assessmentType)
+    }
+  }, [assessmentToEdit, assessmentType, loadAssessmentForEdit])
+
+  useEffect(() => {
+    const initToken = `${location.key}:${courseId}`
+    if (lastInitKeyRef.current === initToken) return
+
+    lastInitKeyRef.current = initToken
+    let active = true
+
+    const initializeStudio = async () => {
+      setDraftResolved(false)
+      setShowDraftModal(false)
+      setPendingDraft(null)
+
+      const savedDraft = loadDraft(courseId)
+      const hasDraft = savedDraft && !isDraftEmpty(savedDraft)
+      const enteredFromSidebar = location.state?.fromSidebar === true
+
+      if (!hasDraft) {
+        await applyNavigationIntent()
+        if (active) setDraftResolved(true)
+        return
+      }
+
+      if (enteredFromSidebar) {
+        applyDraft(savedDraft)
+        if (active) setDraftResolved(true)
+        return
+      }
+
+      setPendingDraft(savedDraft)
+      setShowDraftModal(true)
+    }
+
+    initializeStudio()
+
+    return () => {
+      active = false
+    }
+  }, [applyDraft, applyNavigationIntent, courseId, location.key])
+
+  draftSnapshotRef.current = buildDraftSnapshot()
+
+  useEffect(() => {
+    return () => {
+      if (!courseId) return
+      const snapshot = draftSnapshotRef.current
+      if (snapshot && !isDraftEmpty(snapshot)) {
+        saveDraft(courseId, snapshot)
+      }
+    }
+  }, [courseId])
+
+  useEffect(() => {
+    if (!draftResolved || showDraftModal) return
+
+    const snapshot = buildDraftSnapshot()
+    if (!isDraftEmpty(snapshot)) {
+      saveDraft(courseId, snapshot)
+    }
+  }, [buildDraftSnapshot, courseId, draftResolved, showDraftModal])
+
+  const handleContinueDraft = () => {
+    const draft = pendingDraft ?? loadDraft(courseId)
+    if (draft) {
+      applyDraft(draft)
+    }
+    setPendingDraft(null)
+    setShowDraftModal(false)
+    setDraftResolved(true)
+  }
+
+  const handleDiscardDraft = async () => {
+    clearDraft(courseId)
+    resetFormState()
+    setPendingDraft(null)
+    setShowDraftModal(false)
+
+    try {
+      await applyNavigationIntent()
+    } catch (error) {
+      console.error('Failed to load assessment', error)
+      setAssessmentErr(error.message || 'Failed to load assessment')
+    }
+
+    setDraftResolved(true)
+  }
 
   const handleSaveQuestion = () => {
     if (!qType || !qPrompt || !qMaxGrade) {
@@ -304,6 +533,7 @@ function AssessmentStudioPage() {
       const data = await response.json()
       if (!response.ok)
         throw new Error(data.error || 'Failed to create assessment')
+      clearDraft(courseId)
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Failed to create assessment', error)
@@ -313,69 +543,16 @@ function AssessmentStudioPage() {
 
   const handleDiscardAssessment = () => {
     setShowDiscardModal(false)
-    setQuestionsList([])
-    setActiveQuestionForm(null)
-    setQType('')
-    setQPrompt('')
-    setQMaxGrade(0)
-    setprogLang('')
-    setOptions([])
-    setQuestionErr('')
-    setWindowSwitching(false)
-    setClipboardAccess(false)
-    setScreenSnapshot(false)
-    setQuestionStats(false)
-    let path =
+    const path =
       type === 'ASSIGNMENT'
         ? `/course/${courseId}/assignments`
         : type === 'EXAM'
           ? `/course/${courseId}/exams`
           : `/course/${courseId}/quizzes`
+    clearDraft(courseId)
+    resetFormState()
     navigate(path)
   }
-
-  const handleEditAssessment = () => {
-    if (!assessmentToEdit) return
-    const fetchAssessment = async () => {
-      const response = await fetch(
-        `${API_BASE}/api/assessments/${assessmentToEdit.assessment_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      const data = await response.json()
-      console.log("data: ", data);
-      setTitle(data.assessment.title)
-      setType(data.assessment.assess_type)
-      setDuration(data.assessment.duration)
-      setMaxGrade(data.assessment.max_grade)
-      setDueDate(data.assessment.due_date ? data.assessment.due_date.split('T')[0] : '')
-      setWindowSwitching(data.securitySettings.windowswitching)
-      setClipboardAccess(data.securitySettings.clipboardaccess)
-      setScreenSnapshot(data.securitySettings.screensnapshot)
-      setQuestionStats(data.securitySettings.questionstats)
-      setQuestionsList(
-        data.questions.map((question) => ({
-          id: question.question_id,
-          qType: question.question_type,
-          qPrompt: question.prompt,
-          qMaxGrade: question.max_grade,
-          progLang: question.prog_lang,
-          options: question.options || [],
-        }))
-      )
-    }
-    fetchAssessment()
-  }
-
-  useEffect(() => {
-    if (assessmentToEdit) {
-      handleEditAssessment()
-    }
-  }, [assessmentToEdit])
-
 
   const handleUpdateAssessment = async (e) => {
     e.preventDefault()
@@ -427,17 +604,21 @@ function AssessmentStudioPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/assessments/${assessmentToEdit.assessment_id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(assessmentPayload),
-      })
+      const response = await fetch(
+        `${API_BASE}/api/assessments/${editingAssessment.assessment_id}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(assessmentPayload),
+        }
+      )
       const data = await response.json()
       if (!response.ok)
         throw new Error(data.error || 'Failed to update assessment')
+      clearDraft(courseId)
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Failed to update assessment', error)
@@ -447,6 +628,45 @@ function AssessmentStudioPage() {
 
   const isFormOpen = activeQuestionForm !== null
   const hasQuestions = questionsList.length > 0 || activeQuestionForm === 'new'
+
+  if (!draftResolved) {
+    return (
+      <div className="assessment-studio-page">
+        <div className="course-special-header">
+          <FontAwesomeIcon icon={faFilePen} />
+          <span> / </span>
+          <p>Assessment Studio</p>
+        </div>
+        {showDraftModal && (
+          <div className="draft-modal-backdrop">
+            <div className="draft-modal">
+              <h3>Continue your draft?</h3>
+              <p>
+                You have an unsaved assessment draft for this course. Would you
+                like to continue where you left off or start fresh?
+              </p>
+              <div className="draft-modal-actions">
+                <button
+                  type="button"
+                  className="draft-modal-btn draft-modal-btn--discard"
+                  onClick={handleDiscardDraft}
+                >
+                  Discard draft
+                </button>
+                <button
+                  type="button"
+                  className="draft-modal-btn draft-modal-btn--continue"
+                  onClick={handleContinueDraft}
+                >
+                  Continue draft
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="assessment-studio-page">
@@ -639,18 +859,18 @@ function AssessmentStudioPage() {
                         )}
                         {question.qType === 'MCQ' &&
                           (question.options || []).length > 0 && (
-                          <div className="question-row-options">
-                            <strong>Options:</strong>
-                            <ul>
-                              {(question.options || []).map(
-                                (option, optionIndex) => (
-                                  <li key={optionIndex}>{option}</li>
-                                ),
-                              )}
-                            </ul>
-                          </div>
-                        )}
-                      </div>  
+                            <div className="question-row-options">
+                              <strong>Options:</strong>
+                              <ul>
+                                {(question.options || []).map(
+                                  (option, optionIndex) => (
+                                    <li key={optionIndex}>{option}</li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
+                      </div>
                     )}
                   </div>
                 )
@@ -676,9 +896,11 @@ function AssessmentStudioPage() {
         <button
           type="submit"
           className="submit-btn"
-          onClick={assessmentToEdit ? handleUpdateAssessment : handleSaveAssessment}
+          onClick={
+            editingAssessment ? handleUpdateAssessment : handleSaveAssessment
+          }
         >
-          {assessmentToEdit ? 'Update Assessment' : 'Save Assessment'}
+          {editingAssessment ? 'Update Assessment' : 'Save Assessment'}
         </button>
         <button
           type="button"
@@ -716,8 +938,10 @@ function AssessmentStudioPage() {
       {showSuccessModal && (
         <div className="success-modal-backdrop">
           <div className="success-modal">
-            <h3>{assessmentToEdit ? 'Assessment Updated' : 'Assessment Created'}</h3>
-            {assessmentToEdit ? (
+            <h3>
+              {editingAssessment ? 'Assessment Updated' : 'Assessment Created'}
+            </h3>
+            {editingAssessment ? (
               <p>Assessment has been updated successfully.</p>
             ) : (
               <p>Assessment has been created successfully.</p>
@@ -727,12 +951,13 @@ function AssessmentStudioPage() {
               type="button"
               className="success-modal-btn"
               onClick={() => {
-                let path =
+                const path =
                   type === 'ASSIGNMENT'
                     ? `/course/${courseId}/assignments`
                     : type === 'EXAM'
                       ? `/course/${courseId}/exams`
                       : `/course/${courseId}/quizzes`
+                clearDraft(courseId)
                 navigate(path)
                 setShowSuccessModal(false)
               }}

@@ -75,7 +75,13 @@ function Sidebar(){
                     <SidebarItem title="Exams" path={`/course/${courseId}/exams`} />
                     <SidebarItem title="Grades" path={user.role == "INSTRUCTOR" || user.role == "TA" ? `/course/${courseId}/view-all-students-grade`:`/course/${courseId}/view-grades`} />
                     <SidebarItem title="People" path={`/course/${courseId}/people`} />
-                    {user.role == "INSTRUCTOR" || user.role == "TA" ? <SidebarItem title="Assessment Studio" path={`/course/${courseId}/assessment-studio`} /> : null}
+                    {user.role == "INSTRUCTOR" || user.role == "TA" ? (
+                        <SidebarItem
+                            title="Assessment Studio"
+                            path={`/course/${courseId}/assessment-studio`}
+                            navState={{ fromSidebar: true }}
+                        />
+                    ) : null}
                 </ul>
                 <button type="button" className="sidebar-collapse-button" onClick={() => setIsExpanded(false)}>
                     <FontAwesomeIcon icon={faArrowLeft} /> Collapse Menu
