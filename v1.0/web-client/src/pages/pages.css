@@ -3437,3 +3437,93 @@
     min-width: 0;
   }
 }
+
+/* Take Assessment */
+.take-assessment-page {
+  padding-bottom: 32px;
+}
+
+.take-assessment-header {
+  justify-content: flex-start;
+}
+
+.take-assessment-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bold-text-color);
+}
+
+.assessment-timer {
+  margin-left: auto;
+  margin-right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-variant-numeric: tabular-nums;
+}
+
+.assessment-timer-icon {
+  font-size: 13px;
+  color: #64748b;
+}
+
+
+.assessment-timer-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--bold-text-color);
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+.assessment-timer--warning {
+  background-color: #fff7ed;
+  border-color: #fdba74;
+}
+
+.assessment-timer--warning .assessment-timer-icon,
+.assessment-timer--warning .assessment-timer-value {
+  color: #c2410c;
+}
+
+.assessment-timer--expired {
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.assessment-timer--expired .assessment-timer-icon,
+.assessment-timer--expired .assessment-timer-value {
+  color: #b91c1c;
+}
+
+.assessment-time-up-banner {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.take-assessment-error {
+  margin: 16px 0 0;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.take-assessment-body {
+  margin-top: 24px;
+}
+
+.take-assessment-meta {
+  margin: 0;
+  font-size: 14px;
+  color: var(--light-text-color);
+}

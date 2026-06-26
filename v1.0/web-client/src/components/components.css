@@ -206,6 +206,11 @@ html[data-sidebar="collapsed"] .app-content--with-sidebar {
   width: calc(100vw - 90px) !important;
 }
 
+html[data-sidebar="hidden"] .app-content--with-sidebar {
+  margin-left: 65px !important;
+  width: calc(100vw - 65px) !important;
+}
+
 .sidebar-expand-button {
   position: fixed;
   padding: 0px;
