@@ -45,7 +45,7 @@ function AssignmentRow({
     : ''
   const isPastDue = currentDateTime > new Date(assignment.due_date)
   return (
-    <div className="assignment-row" onClick={onRowClick}>
+    <div className="assignment-row" onClick={assignment.is_published && !assignment.is_closed ? onRowClick : undefined}>
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>
