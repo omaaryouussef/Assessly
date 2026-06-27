@@ -14,6 +14,11 @@ import {
   loadDraft,
   saveDraft,
 } from '../../utils/assessmentStudioDraft'
+import {
+  isDueDateTimeInPast,
+  parseDueDateForInput,
+  parseDueTimeForInput,
+} from '../../utils/assessmentDue'
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
@@ -39,6 +44,7 @@ function AssessmentStudioPage() {
   const [type, setType] = useState(assessmentType)
   const [maxGrade, setMaxGrade] = useState(0)
   const [dueDate, setDueDate] = useState('')
+  const [dueTime, setDueTime] = useState('')
   const [assessmentErr, setAssessmentErr] = useState('')
 
   //Security Specifications
@@ -66,6 +72,7 @@ function AssessmentStudioPage() {
     setType('')
     setMaxGrade(0)
     setDueDate('')
+    setDueTime('')
     setWindowSwitching(false)
     setClipboardAccess(false)
     setScreenSnapshot(false)
@@ -89,6 +96,7 @@ function AssessmentStudioPage() {
       type,
       maxGrade,
       dueDate,
+      dueTime,
       windowSwitching,
       clipboardAccess,
       screenSnapshot,
@@ -102,6 +110,7 @@ function AssessmentStudioPage() {
       type,
       maxGrade,
       dueDate,
+      dueTime,
       windowSwitching,
       clipboardAccess,
       screenSnapshot,
@@ -117,6 +126,7 @@ function AssessmentStudioPage() {
     setType(draft.type || '')
     setMaxGrade(draft.maxGrade ?? 0)
     setDueDate(draft.dueDate || '')
+    setDueTime(draft.dueTime || '')
     setWindowSwitching(Boolean(draft.windowSwitching))
     setClipboardAccess(Boolean(draft.clipboardAccess))
     setScreenSnapshot(Boolean(draft.screenSnapshot))
@@ -156,9 +166,8 @@ function AssessmentStudioPage() {
       setType(data.assessment.assess_type)
       setDuration(data.assessment.duration)
       setMaxGrade(data.assessment.max_grade)
-      setDueDate(
-        data.assessment.due_date ? data.assessment.due_date.split('T')[0] : ''
-      )
+      setDueDate(parseDueDateForInput(data.assessment.due_date))
+      setDueTime(parseDueTimeForInput(data.assessment.due_time))
       setWindowSwitching(data.securitySettings.windowswitching)
       setClipboardAccess(data.securitySettings.clipboardaccess)
       setScreenSnapshot(data.securitySettings.screensnapshot)
@@ -495,7 +504,7 @@ function AssessmentStudioPage() {
   const handleSaveAssessment = async (e) => {
     e.preventDefault()
     setAssessmentErr('')
-    if (!title || !type || !maxGrade || !dueDate) {
+    if (!title || !type || !maxGrade || !dueDate || !dueTime) {
       setAssessmentErr('All Assessment details are required')
       return
     }
@@ -510,8 +519,8 @@ function AssessmentStudioPage() {
       return
     }
 
-    if (dueDate < new Date().toISOString().split('T')[0]) {
-      setAssessmentErr('Due date must be in the future')
+    if (isDueDateTimeInPast(dueDate, dueTime)) {
+      setAssessmentErr('Due date and time must be in the future')
       return
     }
 
@@ -532,6 +541,7 @@ function AssessmentStudioPage() {
       duration,
       maxGrade,
       dueDate,
+      dueTime,
       securitySettings: {
         windowSwitching,
         clipboardAccess,
@@ -579,7 +589,7 @@ function AssessmentStudioPage() {
   const handleUpdateAssessment = async (e) => {
     e.preventDefault()
     setAssessmentErr('')
-    if (!title || !type || !maxGrade || !dueDate) {
+    if (!title || !type || !maxGrade || !dueDate || !dueTime) {
       setAssessmentErr('All Assessment details are required')
       return
     }
@@ -594,8 +604,8 @@ function AssessmentStudioPage() {
       return
     }
 
-    if (dueDate < new Date().toISOString().split('T')[0]) {
-      setAssessmentErr('Due date must be in the future')
+    if (isDueDateTimeInPast(dueDate, dueTime)) {
+      setAssessmentErr('Due date and time must be in the future')
       return
     }
 
@@ -616,6 +626,7 @@ function AssessmentStudioPage() {
       duration,
       maxGrade,
       dueDate,
+      dueTime,
       securitySettings: {
         windowSwitching,
         clipboardAccess,
@@ -762,6 +773,17 @@ function AssessmentStudioPage() {
               name="due-date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="due-time">Due Time</label>
+            <input
+              type="time"
+              id="due-time"
+              name="due-time"
+              value={dueTime}
+              onChange={(e) => setDueTime(e.target.value)}
             />
           </div>
         </div>

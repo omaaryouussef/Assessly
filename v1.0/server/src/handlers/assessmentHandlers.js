@@ -30,6 +30,7 @@ const mapAssessment = (row) => ({
   max_grade: row.max_grade,
   is_published: row.is_published,
   due_date: row.due_date ?? null,
+  due_time: row.due_time ?? null,
   question_type: row.question_type ?? null,
 });
 
@@ -76,7 +77,7 @@ export const getAssignmentsByCourseId = async (req, res) => {
 
     if (role === "STUDENT") {
       const result = await db.query(
-        `SELECT a.assessment_id, a.title, a.max_grade, a.duration,
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
                 (sa_sub.id IS NOT NULL) AS has_submitted
          FROM assessment a
@@ -120,7 +121,7 @@ async function getTimedAssessmentsByCourseId(req, res, assessType) {
 
     if (role === "STUDENT") {
       const result = await db.query(
-        `SELECT a.assessment_id, a.title, a.max_grade, a.duration,
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
                 (sa_sub.id IS NOT NULL) AS has_submitted
          FROM assessment a
@@ -139,7 +140,7 @@ async function getTimedAssessmentsByCourseId(req, res, assessType) {
     }
 
     const result = await db.query(
-      `SELECT a.assessment_id, a.title, a.max_grade, a.duration,
+      `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
               a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}
        FROM assessment a
        WHERE a.course_id = $1 AND a.assess_type = $2`,
@@ -313,7 +314,7 @@ export const toggleAssessmentPublish = async (req, res) => {
       }
 
       const updated = await db.query(
-        `SELECT a.assessment_id, a.title, a.max_grade, a.duration,
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}
          FROM assessment a
          WHERE a.assessment_id = $1`,
@@ -328,7 +329,7 @@ export const toggleAssessmentPublish = async (req, res) => {
       `UPDATE assessment
        SET is_published = $1
        WHERE assessment_id = $2
-       RETURNING assessment_id, title, max_grade, is_published, duration, is_closed`,
+       RETURNING assessment_id, title, max_grade, is_published, duration, due_date, due_time, is_closed`,
       [is_published, assessmentId],
     );
 
@@ -338,7 +339,7 @@ export const toggleAssessmentPublish = async (req, res) => {
 
     if (TIMED_ASSESSMENT_TYPES.has(row.assess_type)) {
       const withType = await db.query(
-        `SELECT a.assessment_id, a.title, a.max_grade, a.duration,
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}
          FROM assessment a
          WHERE a.assessment_id = $1`,
@@ -397,7 +398,7 @@ export const toggleAssessmentClose = async (req, res) => {
     );
 
     const updated = await db.query(
-      `SELECT a.assessment_id, a.title, a.max_grade, a.duration,
+      `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
               a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}
        FROM assessment a
        WHERE a.assessment_id = $1`,
@@ -451,6 +452,7 @@ export const createAssessment = async (req, res) => {
     duration,
     maxGrade,
     dueDate,
+    dueTime,
     type,
     securitySettings,
     questions,
@@ -473,8 +475,8 @@ export const createAssessment = async (req, res) => {
         .json({ error: "Assessment with this title already exists" });
     }
     const assessment = await db.query(
-      "INSERT INTO assessment (title,assess_type, duration, max_grade, due_date, course_id, is_published, is_closed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING assessment_id, assess_type",
-      [title, type, duration, maxGrade, dueDate, courseId, false, false],
+      "INSERT INTO assessment (title, assess_type, duration, max_grade, due_date, due_time, course_id, is_published, is_closed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING assessment_id, assess_type",
+      [title, type, duration, maxGrade, dueDate, dueTime, courseId, false, false],
     );
     const assessmentId = assessment.rows[0].assessment_id;
     for (const question of questions) {
@@ -524,6 +526,7 @@ export const updateAssessment = async (req, res) => {
     duration,
     maxGrade,
     dueDate,
+    dueTime,
     type,
     securitySettings,
     questions,
@@ -569,8 +572,8 @@ export const updateAssessment = async (req, res) => {
     }
 
     const newAssessment = await db.query(
-      "UPDATE assessment SET title = $1, duration = $2, max_grade = $3, due_date = $4, assess_type = $5 WHERE assessment_id = $6 RETURNING *",
-      [title, duration, maxGrade, dueDate, type, assessmentId],
+      "UPDATE assessment SET title = $1, duration = $2, max_grade = $3, due_date = $4, due_time = $5, assess_type = $6 WHERE assessment_id = $7 RETURNING *",
+      [title, duration, maxGrade, dueDate, dueTime, type, assessmentId],
     );
     const newAssessmentId = newAssessment.rows[0].assessment_id;
 

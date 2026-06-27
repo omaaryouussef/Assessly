@@ -14,6 +14,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../components/auth/AuthWrapper'
+import {
+  buildDueDateTime,
+  formatDueDateTimeLabel,
+} from '../utils/assessmentDue'
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
@@ -37,13 +41,8 @@ function AssignmentRow({
   onRowClick,
 }) {
   const icon = ASSIGNMENT_ICONS[assignment.question_type] ?? faFile
-  const dueDate = assignment.due_date
-    ? new Date(assignment.due_date).toLocaleDateString()
-    : ''
-  const dueTime = assignment.due_date
-    ? new Date(assignment.due_date).toLocaleTimeString()
-    : ''
-  const isPastDue = currentDateTime > new Date(assignment.due_date)
+  const dueAt = buildDueDateTime(assignment.due_date, assignment.due_time)
+  const isPastDue = dueAt ? currentDateTime > dueAt : false
   return (
     <div className="assignment-row" onClick={assignment.is_published && !assignment.is_closed ? onRowClick : undefined}>
       <div className="assignment-row-icon" aria-hidden="true">
@@ -56,7 +55,9 @@ function AssignmentRow({
             icon={faCalendarDays}
             className="assignment-meta-icon"
           />
-          {assignment.due_date ? `Due ${dueDate} ${dueTime} | ` : ''}
+          {assignment.due_date
+            ? `${formatDueDateTimeLabel(assignment.due_date, assignment.due_time)} | `
+            : ''}
           {assignment.max_grade} pts
         </p>
         {canManage && (

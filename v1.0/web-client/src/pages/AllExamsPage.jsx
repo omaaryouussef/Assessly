@@ -9,10 +9,12 @@ import {
   faFileLines,
   faTerminal,
   faClock,
+  faCalendarDays,
   faPen,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
+import { formatDueDateTimeLabel } from '../utils/assessmentDue'
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
@@ -51,6 +53,17 @@ function ExamRow({
         <p className="assignment-row-meta">
           <FontAwesomeIcon icon={faClock} className="assignment-meta-icon" />
           {exam.duration} min | {exam.max_grade} pts
+          {exam.due_date ? (
+            <>
+              {' '}
+              |{' '}
+              <FontAwesomeIcon
+                icon={faCalendarDays}
+                className="assignment-meta-icon"
+              />{' '}
+              {formatDueDateTimeLabel(exam.due_date, exam.due_time)}
+            </>
+          ) : null}
         </p>
         {canManage && (
           <div className="assignment-row-action-buttons">

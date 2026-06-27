@@ -51,6 +51,8 @@ CREATE TABLE Assessment
     title VARCHAR(50) NOT NULL,
     duration INT NOT NULL,
     max_grade FLOAT NOT NULL,
+    due_date DATE,
+    due_time TIME,
     is_published BOOLEAN NOT NULL DEFAULT false,
     is_closed BOOLEAN NOT NULL DEFAULT false,
     course_id INT NOT NULL,
