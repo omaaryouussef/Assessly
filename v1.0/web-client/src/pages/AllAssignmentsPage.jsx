@@ -44,7 +44,16 @@ function AssignmentRow({
   const dueAt = buildDueDateTime(assignment.due_date, assignment.due_time)
   const isPastDue = dueAt ? currentDateTime > dueAt : false
   return (
-    <div className="assignment-row" onClick={assignment.is_published && !assignment.is_closed ? onRowClick : undefined}>
+    <div
+      className="assignment-row"
+      onClick={
+        !canManage &&
+        assignment.is_published &&
+        !assignment.has_submitted
+          ? onRowClick
+          : undefined
+      }
+    >
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>
@@ -86,35 +95,53 @@ function AssignmentRow({
         )}
       </div>
       <div className="assignment-row-actions">
-        <span
-          className={`assignment-status-badge ${
-            assignment.is_published
-              ? 'assignment-status-badge--published'
-              : 'assignment-status-badge--unpublished'
-          }`}
-        >
-          {assignment.is_published ? 'Published' : 'Not Published'}
-        </span>
-        {isPastDue && (
-          <span className="assignment-status-badge assignment-status-badge--past-due">
-            Past Due
-          </span>
-        )}
-        {canManage && (
-          <button
-            type="button"
-            className={`assignment-publish-btn ${
-              assignment.is_published ? 'assignment-publish-btn--unpublish' : ''
-            }`}
-            onClick={() => onPublishClick(assignment)}
-            disabled={isPublishing}
-          >
-            {isPublishing
-              ? 'Saving...'
-              : assignment.is_published
-                ? 'Unpublish'
-                : 'Publish'}
-          </button>
+        {canManage ? (
+          <>
+            <span
+              className={`assignment-status-badge ${
+                assignment.is_published
+                  ? 'assignment-status-badge--published'
+                  : 'assignment-status-badge--unpublished'
+              }`}
+            >
+              {assignment.is_published ? 'Published' : 'Not Published'}
+            </span>
+            {isPastDue && (
+              <span className="assignment-status-badge assignment-status-badge--past-due">
+                Past Due
+              </span>
+            )}
+            <button
+              type="button"
+              className={`assignment-publish-btn ${
+                assignment.is_published ? 'assignment-publish-btn--unpublish' : ''
+              }`}
+              onClick={() => onPublishClick(assignment)}
+              disabled={isPublishing}
+            >
+              {isPublishing
+                ? 'Saving...'
+                : assignment.is_published
+                  ? 'Unpublish'
+                  : 'Publish'}
+            </button>
+          </>
+        ) : (
+          <>
+            {assignment.has_submitted ? (
+              <span className="assignment-status-badge assignment-status-badge--submitted">
+                Submitted
+              </span>
+            ) : isPastDue ? (
+              <span className="assignment-status-badge assignment-status-badge--missing">
+                Missing
+              </span>
+            ) : (
+              <span className="assignment-status-badge assignment-status-badge--available">
+                Available
+              </span>
+            )}
+          </>
         )}
       </div>
     </div>

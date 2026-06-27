@@ -10,6 +10,7 @@ import {
   createAssessment,
   getAssessmentById,
   updateAssessment,
+  submitAssessment,
 } from "../handlers/assessmentHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
@@ -60,6 +61,13 @@ assessmentsRouter.get(
   authenticate,
   authorize("INSTRUCTOR", "TA", "STUDENT"),
   getAssessmentById,
+);
+
+assessmentsRouter.post(
+  "/:assessmentId/submit",
+  authenticate,
+  authorize("STUDENT"),
+  submitAssessment,
 );
 
 export default assessmentsRouter;

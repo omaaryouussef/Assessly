@@ -44,7 +44,7 @@ function ExamRow({
   const isPublished = exam.is_published;
 
   return (
-    <div className="assignment-row" onClick={exam.is_published && !exam.is_closed ? onRowClick : undefined}>
+    <div className="assignment-row" onClick={exam.is_published && !exam.is_closed && !exam.has_submitted? onRowClick : undefined}>
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>

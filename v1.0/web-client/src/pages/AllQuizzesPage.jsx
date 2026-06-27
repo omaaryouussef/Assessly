@@ -43,7 +43,7 @@ function QuizRow({
   const icon = QUIZ_ICONS[quiz.question_type] ?? faFile
   const isPublished = quiz.is_published;
   return (
-    <div className="assignment-row" onClick={quiz.is_published && !quiz.is_closed ? onRowClick : undefined}>
+    <div className="assignment-row" onClick={quiz.is_published && !quiz.is_closed && !quiz.has_submitted ? onRowClick : undefined}>
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>

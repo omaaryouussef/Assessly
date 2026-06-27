@@ -320,7 +320,6 @@ export const toggleAssessmentPublish = async (req, res) => {
          WHERE a.assessment_id = $1`,
         [assessmentId],
       );
-      
 
       return res.status(200).json(mapQuiz(updated.rows[0]));
     }
@@ -476,7 +475,17 @@ export const createAssessment = async (req, res) => {
     }
     const assessment = await db.query(
       "INSERT INTO assessment (title, assess_type, duration, max_grade, due_date, due_time, course_id, is_published, is_closed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING assessment_id, assess_type",
-      [title, type, duration, maxGrade, dueDate, dueTime, courseId, false, false],
+      [
+        title,
+        type,
+        duration,
+        maxGrade,
+        dueDate,
+        dueTime,
+        courseId,
+        false,
+        false,
+      ],
     );
     const assessmentId = assessment.rows[0].assessment_id;
     for (const question of questions) {
@@ -707,5 +716,85 @@ export const getAssessmentById = async (req, res) => {
   } catch (error) {
     console.log("Error: ", error);
     return res.status(500).json({ error: "Failed to get assessment by id" });
+  }
+};
+
+export const submitAssessment = async (req, res) => {
+  const { assessmentId } = req.params;
+  const answersByQuestion = req.body?.answers ?? req.body;
+  const { user_id: userId } = req.user;
+
+  if (!answersByQuestion || typeof answersByQuestion !== "object") {
+    return res.status(400).json({ error: "Answers are required" });
+  }
+
+  try {
+    const assessment = await db.query(
+      "SELECT assessment_id FROM assessment WHERE assessment_id = $1",
+      [assessmentId],
+    );
+    if (assessment.rows.length === 0) {
+      return res.status(404).json({ error: "Assessment not found" });
+    }
+
+    const existingSubmission = await db.query(
+      `SELECT id FROM student_assessment
+       WHERE student_id = $1 AND assessment_id = $2`,
+      [userId, assessmentId],
+    );
+    if (existingSubmission.rows.length > 0) {
+      return res.status(400).json({ error: "Assessment already submitted" });
+    }
+
+    const questions = await db.query(
+      "SELECT question_id FROM question WHERE assessment_id = $1",
+      [assessmentId],
+    );
+    if (questions.rows.length === 0) {
+      return res.status(404).json({ error: "Questions not found" });
+    }
+
+    await db.query("BEGIN");
+
+    for (const question of questions.rows) {
+      const questionId = question.question_id;
+      const rawAnswer =
+        answersByQuestion[questionId]?.answer ??
+        answersByQuestion[String(questionId)]?.answer;
+      const answer = rawAnswer === undefined || rawAnswer === null ? "" : String(rawAnswer);
+
+      await db.query(
+        `INSERT INTO student_question_answer
+          (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [0, answer, 0, 0, userId, questionId],
+      );
+    }
+
+    const submission = await db.query(
+      `INSERT INTO student_assessment (grade, percent, student_id, assessment_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [0, 0, userId, assessmentId],
+    );
+
+    if (submission.rows.length === 0) {
+      await db.query("ROLLBACK");
+      return res.status(400).json({ error: "Failed to submit assessment" });
+    }
+
+    await db.query("COMMIT");
+
+    return res
+      .status(200)
+      .json({ message: "Assessment submitted successfully" });
+  } catch (error) {
+    try {
+      await db.query("ROLLBACK");
+    } catch {
+      // No active transaction to roll back.
+    }
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to submit assessment" });
   }
 };
