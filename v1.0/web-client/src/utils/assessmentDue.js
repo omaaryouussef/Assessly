@@ -12,9 +12,7 @@ export function buildDueDateTime(dueDate, dueTime) {
   if (!dueDate) return null
 
   const datePart = parseDueDateForInput(dueDate)
-  const timePart = dueTime
-    ? `${parseDueTimeForInput(dueTime)}:00`
-    : '23:59:59'
+  const timePart = dueTime ? `${parseDueTimeForInput(dueTime)}:59` : '23:59:59'
 
   return new Date(`${datePart}T${timePart}`)
 }
@@ -52,7 +50,6 @@ export function isDueDateTimeInPast(dueDate, dueTime) {
   if (!dueAt || Number.isNaN(dueAt.getTime())) return false
   return dueAt <= new Date()
 }
-
 
 export function formatCountdown(totalSeconds) {
   const hours = Math.floor(totalSeconds / 3600)

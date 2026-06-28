@@ -2,6 +2,8 @@ import pg from "pg";
 import dotenv from "dotenv";
 dotenv.config();
 
+
+
 const db = new pg.Client({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -9,5 +11,7 @@ const db = new pg.Client({
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
 });
+
+pg.types.setTypeParser(1082, (value) => value); // DATE NO TYPE CONVERSION
 
 export default db;

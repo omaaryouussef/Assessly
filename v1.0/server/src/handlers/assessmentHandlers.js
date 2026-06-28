@@ -79,7 +79,7 @@ export const getAssignmentsByCourseId = async (req, res) => {
 
     if (role === "STUDENT") {
       const result = await db.query(
-        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
                 (sa_sub.id IS NOT NULL) AS has_submitted, sa_sub.date_submitted AS date_submitted, sa_sub.time_submitted AS time_submitted
          FROM assessment a
@@ -97,16 +97,15 @@ export const getAssignmentsByCourseId = async (req, res) => {
       return res.status(200).json(result.rows.map(mapQuiz));
     }
     const result = await db.query(
-      "SELECT * FROM assessment WHERE course_id = $1 AND assess_type = 'ASSIGNMENT'",
+      "SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time, a.is_published, a.is_closed FROM assessment WHERE course_id = $1 AND assess_type = 'ASSIGNMENT'",
       [courseId],
     );
-    return res.status(200).json(result.rows);
+    return res.status(200).json(result.rows.map(mapQuiz));
   } catch (error) {
     console.log("Error: ", error);
-    return res.status(500).json({ error: "Failed to fetch assignments" });
+    return res.status(500).json({ error: `Failed to fetch ${label}` });
   }
 };
-
 async function getTimedAssessmentsByCourseId(req, res, assessType) {
   const { courseId } = req.params;
   const { user_id: userId, role } = req.user;
@@ -123,7 +122,7 @@ async function getTimedAssessmentsByCourseId(req, res, assessType) {
 
     if (role === "STUDENT") {
       const result = await db.query(
-        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
                 (sa_sub.id IS NOT NULL) AS has_submitted
          FROM assessment a
@@ -142,7 +141,7 @@ async function getTimedAssessmentsByCourseId(req, res, assessType) {
     }
 
     const result = await db.query(
-      `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
+      `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
               a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}
        FROM assessment a
        WHERE a.course_id = $1 AND a.assess_type = $2`,
@@ -316,7 +315,7 @@ export const toggleAssessmentPublish = async (req, res) => {
       }
 
       const updated = await db.query(
-        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}
          FROM assessment a
          WHERE a.assessment_id = $1`,
@@ -340,7 +339,7 @@ export const toggleAssessmentPublish = async (req, res) => {
 
     if (TIMED_ASSESSMENT_TYPES.has(row.assess_type)) {
       const withType = await db.query(
-        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
+        `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}
          FROM assessment a
          WHERE a.assessment_id = $1`,
@@ -399,7 +398,7 @@ export const toggleAssessmentClose = async (req, res) => {
     );
 
     const updated = await db.query(
-      `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
+      `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
               a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}
        FROM assessment a
        WHERE a.assessment_id = $1`,
@@ -763,7 +762,8 @@ export const submitAssessment = async (req, res) => {
       const rawAnswer =
         answersByQuestion[questionId]?.answer ??
         answersByQuestion[String(questionId)]?.answer;
-      const answer = rawAnswer === undefined || rawAnswer === null ? "" : String(rawAnswer);
+      const answer =
+        rawAnswer === undefined || rawAnswer === null ? "" : String(rawAnswer);
 
       await db.query(
         `INSERT INTO student_question_answer
