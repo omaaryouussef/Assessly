@@ -32,6 +32,8 @@ const mapAssessment = (row) => ({
   due_date: row.due_date ?? null,
   due_time: row.due_time ?? null,
   question_type: row.question_type ?? null,
+  date_submitted: row.date_submitted ?? null,
+  time_submitted: row.time_submitted ?? null,
 });
 
 const mapQuiz = (row) => ({
@@ -79,7 +81,7 @@ export const getAssignmentsByCourseId = async (req, res) => {
       const result = await db.query(
         `SELECT a.assessment_id, a.title, a.max_grade, a.duration, a.due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
-                (sa_sub.id IS NOT NULL) AS has_submitted
+                (sa_sub.id IS NOT NULL) AS has_submitted, sa_sub.date_submitted AS date_submitted, sa_sub.time_submitted AS time_submitted
          FROM assessment a
          INNER JOIN student_access_assessments saa ON saa.assessment_id = a.assessment_id
          LEFT JOIN student_assessment sa_sub

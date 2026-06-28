@@ -40,16 +40,18 @@ function AssignmentRow({
   setAssignmentToDelete,
   onRowClick,
 }) {
+  console.log(assignment)
   const icon = ASSIGNMENT_ICONS[assignment.question_type] ?? faFile
   const dueAt = buildDueDateTime(assignment.due_date, assignment.due_time)
   const isPastDue = dueAt ? currentDateTime > dueAt : false
+  
+  const submittedAt = buildDueDateTime(assignment.date_submitted, assignment.time_submitted)
+  const lateSubmitted = assignment.has_submitted && submittedAt && submittedAt > dueAt
   return (
     <div
       className="assignment-row"
       onClick={
-        !canManage &&
-        assignment.is_published &&
-        !assignment.has_submitted
+        !canManage && assignment.is_published && !assignment.has_submitted
           ? onRowClick
           : undefined
       }
@@ -114,7 +116,9 @@ function AssignmentRow({
             <button
               type="button"
               className={`assignment-publish-btn ${
-                assignment.is_published ? 'assignment-publish-btn--unpublish' : ''
+                assignment.is_published
+                  ? 'assignment-publish-btn--unpublish'
+                  : ''
               }`}
               onClick={() => onPublishClick(assignment)}
               disabled={isPublishing}
@@ -128,9 +132,13 @@ function AssignmentRow({
           </>
         ) : (
           <>
-            {assignment.has_submitted ? (
+            {assignment.has_submitted && !lateSubmitted ? (
               <span className="assignment-status-badge assignment-status-badge--submitted">
                 Submitted
+              </span>
+            ) : assignment.has_submitted && lateSubmitted ? (
+              <span className="assignment-status-badge assignment-status-badge--late-submitted">
+                Late Submitted
               </span>
             ) : isPastDue ? (
               <span className="assignment-status-badge assignment-status-badge--missing">
@@ -305,7 +313,6 @@ function AllAssignmentsPage() {
           {assignmentsList
             .filter((assignment) => canManage || assignment.is_published)
             .map((assignment) => (
-              
               <AssignmentRow
                 key={assignment.assessment_id}
                 assignment={assignment}
