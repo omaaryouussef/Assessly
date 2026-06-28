@@ -40,6 +40,7 @@ function AssignmentRow({
   setAssignmentToDelete,
   onRowClick,
 }) {
+  console.log(assignment)
   const icon = ASSIGNMENT_ICONS[assignment.question_type] ?? faFile
   const dueAt = buildDueDateTime(assignment.due_date, assignment.due_time)
   const isPastDue = dueAt ? currentDateTime > dueAt : false

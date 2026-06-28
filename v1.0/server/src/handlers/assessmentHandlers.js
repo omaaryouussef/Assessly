@@ -81,7 +81,7 @@ export const getAssignmentsByCourseId = async (req, res) => {
       const result = await db.query(
         `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
-                (sa_sub.id IS NOT NULL) AS has_submitted, sa_sub.date_submitted AS date_submitted, sa_sub.time_submitted AS time_submitted
+                (sa_sub.id IS NOT NULL) AS has_submitted, TO_CHAR(sa_sub.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa_sub.time_submitted AS time_submitted
          FROM assessment a
          INNER JOIN student_access_assessments saa ON saa.assessment_id = a.assessment_id
          LEFT JOIN student_assessment sa_sub
