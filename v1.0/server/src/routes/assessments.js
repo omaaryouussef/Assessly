@@ -11,6 +11,7 @@ import {
   getAssessmentById,
   updateAssessment,
   submitAssessment,
+  runCode,
 } from "../handlers/assessmentHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
@@ -68,6 +69,13 @@ assessmentsRouter.post(
   authenticate,
   authorize("STUDENT"),
   submitAssessment,
+);
+
+assessmentsRouter.post(
+  "/:assessmentId/run-code",
+  authenticate,
+  authorize("STUDENT", "INSTRUCTOR", "TA"),
+  runCode,
 );
 
 export default assessmentsRouter;

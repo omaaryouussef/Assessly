@@ -97,13 +97,14 @@ export const getAssignmentsByCourseId = async (req, res) => {
       return res.status(200).json(result.rows.map(mapQuiz));
     }
     const result = await db.query(
-      "SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time, a.is_published, a.is_closed FROM assessment WHERE course_id = $1 AND assess_type = 'ASSIGNMENT'",
+      `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time, a.is_published, a.is_closed 
+      FROM assessment a WHERE course_id = $1 AND assess_type = 'ASSIGNMENT'`,
       [courseId],
     );
     return res.status(200).json(result.rows.map(mapQuiz));
   } catch (error) {
     console.log("Error: ", error);
-    return res.status(500).json({ error: `Failed to fetch ${label}` });
+    return res.status(500).json({ error: `Failed to fetch assignments` });
   }
 };
 async function getTimedAssessmentsByCourseId(req, res, assessType) {
@@ -800,3 +801,98 @@ export const submitAssessment = async (req, res) => {
     return res.status(500).json({ error: "Failed to submit assessment" });
   }
 };
+
+export const runCode = async (req, res) => {
+  const { code, progLang, progVersion } = req.body;
+
+  if (!code || !progLang) {
+    return res.status(400).json({ error: "Code and programming language are required" });
+  }
+
+  const runtime = resolvePistonRuntime(progLang, progVersion);
+  if (!runtime) {
+    return res.status(400).json({
+      error: "Unsupported language or missing version for Piston runtime",
+    });
+  }
+
+  const pistonUrl =
+    process.env.PISTON_API_URL || "http://localhost:2000/api/v2/execute";
+
+  try {
+    const pistonPayload = {
+        language: runtime.language,
+        version: runtime.version,
+        files: [
+          {
+            name: getPistonFileName(runtime.language),
+            content: code,
+          },
+        ],
+        run_timeout: 2000,
+      };
+
+      if (runtime.compiled) {
+        pistonPayload.compile_timeout = 8000;
+      }
+
+      const result = await fetch(pistonUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pistonPayload),
+    });
+
+    const data = await result.json();
+    if (!result.ok) {
+      return res.status(result.status).json(data);
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to run code" });
+  }
+};
+
+function normalizePistonLanguage(progLang) {
+  const lang = String(progLang || "").toLowerCase().trim();
+  const aliases = {
+    gcc: "c",
+    cpp: "c++",
+    gpp: "c++",
+    "c++": "c++",
+    py: "python",
+    python3: "python",
+    js: "node",
+    javascript: "node",
+  };
+  return aliases[lang] || lang;
+}
+
+function resolvePistonRuntime(progLang, progVersion) {
+  const language = normalizePistonLanguage(progLang);
+  const defaultVersions = {
+    python: "3.12.0",
+    "c++": "10.2.0",
+    c: "10.2.0",
+    node: "18.15.0",
+    java: "15.0.2",
+  };
+  const version = progVersion || defaultVersions[language];
+  if (!version) return null;
+  const compiled = new Set(["c", "c++", "java", "rust", "go", "kotlin"]).has(
+    language,
+  );
+  return { language, version, compiled };
+}
+
+function getPistonFileName(language) {
+  const fileNames = {
+    python: "main.py",
+    node: "main.js",
+    c: "main.c",
+    "c++": "main.cpp",
+    java: "Main.java",
+  };
+  return fileNames[language] || "main.txt";
+}

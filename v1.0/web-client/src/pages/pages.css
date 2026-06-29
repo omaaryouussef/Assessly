@@ -3955,6 +3955,111 @@
   font-family: inherit;
 }
 
+.take-assessment-page .question-answer-block--coding {
+  gap: 14px;
+}
+
+.take-assessment-page .coding-workspace-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.take-assessment-page .coding-workspace-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.take-assessment-page .run-code-button {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 18px;
+  border: 1px solid #1d4ed8;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.take-assessment-page .run-code-button:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1e40af;
+}
+
+.take-assessment-page .run-code-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.take-assessment-page .coding-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  min-height: min(70vh, 640px);
+  height: min(70vh, 640px);
+}
+
+.take-assessment-page .coding-workspace-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.take-assessment-page .coding-workspace-panel-label {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.take-assessment-page .coding-workspace-panel-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.take-assessment-page .coding-workspace-panel--editor .coding-workspace-panel-body {
+  background: #1e1e1e;
+}
+
+.take-assessment-page .coding-output-box {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.take-assessment-page .coding-workspace-panel--output {
+  background: #0f172a;
+}
+
 .take-assessment-page .question-row-options {
   list-style: none;
   margin: 0;

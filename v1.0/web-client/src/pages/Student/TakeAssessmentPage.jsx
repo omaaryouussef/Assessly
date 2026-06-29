@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import Editor from '@monaco-editor/react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -34,11 +35,25 @@ function getAssessmentTypeLabel(assessType) {
   return 'Quizzes'
 }
 
+function formatPistonOutput(data) {
+  const parts = []
+
+  if (data.compile?.stderr) parts.push(data.compile.stderr)
+  if (data.compile?.stdout) parts.push(data.compile.stdout)
+  if (data.run?.stdout) parts.push(data.run.stdout)
+  if (data.run?.stderr) parts.push(data.run.stderr)
+
+  return parts.join('\n').trim() || 'Program finished with no output.'
+}
+
 function QuestionRow({
   question,
   currentQuestionIndex,
   answers,
   setAnswers,
+  handleRunCode,
+  codeOutput,
+  isRunningCode,
 }) {
   return (
     <div
@@ -52,19 +67,55 @@ function QuestionRow({
       <div className="question-row-body">
         <p className="question-row-prompt">{question.qPrompt}</p>
         {question.qType === 'CODING' && (
-          <div className="question-answer-block">
-            <span className="question-answer-label">Programming language</span>
-            <p className="question-answer-meta">{question.progLang}</p>
-            <input
-              type="text"
-              className="question-answer-input"
-              placeholder="Type your answer here..."
-              value={answers[question.id]?.answer ?? ''}
-              onChange={(e) => setAnswers((prev) => ({
-                ...prev,
-                [question.id]: { answer: e.target.value },
-              }))}
-            />
+          <div className="question-answer-block question-answer-block--coding">
+            <div className="coding-workspace-toolbar">
+              <div className="coding-workspace-meta">
+                <span className="question-answer-label">
+                  Programming language
+                </span>
+                <p className="question-answer-meta">{question.progLang}</p>
+              </div>
+              <button
+                type="button"
+                className="run-code-button"
+                onClick={() =>
+                  handleRunCode(
+                    question.id,
+                    answers[question.id]?.answer ?? '',
+                    question.progLang,
+                    question.langVersion
+                  )
+                }
+                disabled={isRunningCode}
+              >
+                {isRunningCode ? 'Running...' : 'Run'}
+              </button>
+            </div>
+            <div className="coding-workspace">
+              <div className="coding-workspace-panel coding-workspace-panel--editor">
+                <span className="coding-workspace-panel-label">Editor</span>
+                <div className="coding-workspace-panel-body">
+                  <Editor
+                    height="100%"
+                    theme="vs-dark"
+                    defaultLanguage={question.progLang}
+                    defaultValue={answers[question.id]?.answer ?? ''}
+                    onChange={(value) =>
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [question.id]: { answer: value },
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+              <div className="coding-workspace-panel coding-workspace-panel--output">
+                <span className="coding-workspace-panel-label">Output</span>
+                <pre className="coding-output-box">
+                  {codeOutput || 'Run your code to see output here.'}
+                </pre>
+              </div>
+            </div>
           </div>
         )}
         {question.qType === 'ESSAY' && (
@@ -107,10 +158,12 @@ function QuestionRow({
                     checked={
                       answers[question.id]?.answer === option ? true : false
                     }
-                    onChange={(e) => setAnswers((prev) => ({
-                      ...prev,
-                      [question.id]: { answer: e.target.value },
-                    }))}
+                    onChange={(e) =>
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [question.id]: { answer: e.target.value },
+                      }))
+                    }
                   />
                   <label htmlFor={`${question.id}-${option}`}>{option}</label>
                 </li>
@@ -152,11 +205,58 @@ function TakeAssessmentPage() {
   const [questionStats, setQuestionStats] = useState(false)
 
   const [answers, setAnswers] = useState({})
+  const [codeOutputs, setCodeOutputs] = useState({})
+  const [runningQuestionId, setRunningQuestionId] = useState(null)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const submittedRef = useRef(false)
   const isTimedAssessment = (type === 'QUIZ' || type === 'EXAM') && duration > 0
+
+  const handleRunCode = useCallback(
+    async (questionId, code, progLang, progVersion) => {
+      if (!code) return
+      if (!progLang) return
+
+      setRunningQuestionId(questionId)
+      setCodeOutputs((prev) => ({
+        ...prev,
+        [questionId]: 'Running...',
+      }))
+
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/assessments/${assessmentToTake.assessment_id}/run-code`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code, progLang, progVersion }),
+          }
+        )
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.error || data.message || 'Failed to run code')
+        }
+
+        setCodeOutputs((prev) => ({
+          ...prev,
+          [questionId]: formatPistonOutput(data),
+        }))
+      } catch (error) {
+        console.error('Failed to run code', error)
+        setCodeOutputs((prev) => ({
+          ...prev,
+          [questionId]: error.message || 'Failed to run code',
+        }))
+      } finally {
+        setRunningQuestionId(null)
+      }
+    },
+    [token, assessmentToTake?.assessment_id]
+  )
 
   const handleSubmit = useCallback(async () => {
     if (!assessmentToTake?.assessment_id || submittedRef.current) return
@@ -171,6 +271,7 @@ function TakeAssessmentPage() {
         { answer: answers[question.id]?.answer ?? '' },
       ])
     )
+    console.log(submissionAnswers)
 
     try {
       const response = await fetch(
@@ -237,6 +338,7 @@ function TakeAssessmentPage() {
             qPrompt: question.prompt,
             qMaxGrade: question.max_grade,
             progLang: question.prog_lang,
+            langVersion: question.lang_version,
             options: question.options || [],
           }))
         )
@@ -452,6 +554,13 @@ function TakeAssessmentPage() {
                 currentQuestionIndex={currentQuestionIndex}
                 answers={answers}
                 setAnswers={setAnswers}
+                handleRunCode={handleRunCode}
+                codeOutput={
+                  codeOutputs[questionsList[currentQuestionIndex]?.id]
+                }
+                isRunningCode={
+                  runningQuestionId === questionsList[currentQuestionIndex]?.id
+                }
               />
             ) : (
               <p className="assessment-questions-empty">No questions found</p>
@@ -504,7 +613,9 @@ function TakeAssessmentPage() {
           <div className="success-modal success-modal--submitted">
             <h3>Assessment submitted</h3>
             <p>
-              <strong className="success-modal-assessment-title">{title}</strong>{' '}
+              <strong className="success-modal-assessment-title">
+                {title}
+              </strong>{' '}
               has been submitted successfully. Your instructor will review your
               answers when grading is complete.
             </p>
