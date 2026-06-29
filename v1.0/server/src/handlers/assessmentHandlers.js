@@ -809,32 +809,20 @@ export const runCode = async (req, res) => {
     return res.status(400).json({ error: "Code and programming language are required" });
   }
 
-  const runtime = resolvePistonRuntime(progLang, progVersion);
-  if (!runtime) {
-    return res.status(400).json({
-      error: "Unsupported language or missing version for Piston runtime",
-    });
-  }
-
   const pistonUrl =
     process.env.PISTON_API_URL || "http://localhost:2000/api/v2/execute";
 
   try {
     const pistonPayload = {
-        language: runtime.language,
-        version: runtime.version,
+        language: progLang,
+        version: progVersion,
         files: [
           {
-            name: getPistonFileName(runtime.language),
             content: code,
           },
         ],
         run_timeout: 2000,
       };
-
-      if (runtime.compiled) {
-        pistonPayload.compile_timeout = 8000;
-      }
 
       const result = await fetch(pistonUrl, {
       method: "POST",
@@ -854,45 +842,4 @@ export const runCode = async (req, res) => {
   }
 };
 
-function normalizePistonLanguage(progLang) {
-  const lang = String(progLang || "").toLowerCase().trim();
-  const aliases = {
-    gcc: "c",
-    cpp: "c++",
-    gpp: "c++",
-    "c++": "c++",
-    py: "python",
-    python3: "python",
-    js: "node",
-    javascript: "node",
-  };
-  return aliases[lang] || lang;
-}
 
-function resolvePistonRuntime(progLang, progVersion) {
-  const language = normalizePistonLanguage(progLang);
-  const defaultVersions = {
-    python: "3.12.0",
-    "c++": "10.2.0",
-    c: "10.2.0",
-    node: "18.15.0",
-    java: "15.0.2",
-  };
-  const version = progVersion || defaultVersions[language];
-  if (!version) return null;
-  const compiled = new Set(["c", "c++", "java", "rust", "go", "kotlin"]).has(
-    language,
-  );
-  return { language, version, compiled };
-}
-
-function getPistonFileName(language) {
-  const fileNames = {
-    python: "main.py",
-    node: "main.js",
-    c: "main.c",
-    "c++": "main.cpp",
-    java: "Main.java",
-  };
-  return fileNames[language] || "main.txt";
-}

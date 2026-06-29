@@ -60,6 +60,7 @@ function AssessmentStudioPage() {
   const [options, setOptions] = useState([])
   const [qMaxGrade, setQMaxGrade] = useState(0)
   const [progLang, setprogLang] = useState('')
+  const [langVersion, setLangVersion] = useState('')
   const [questionsList, setQuestionsList] = useState([])
 
   const [questionErr, setQuestionErr] = useState('')
@@ -83,6 +84,7 @@ function AssessmentStudioPage() {
     setQPrompt('')
     setQMaxGrade(0)
     setprogLang('')
+    setLangVersion('')
     setOptions([])
     setQuestionErr('')
     setAssessmentErr('')
@@ -142,6 +144,7 @@ function AssessmentStudioPage() {
     setQPrompt('')
     setQMaxGrade(0)
     setprogLang('')
+    setLangVersion('')
     setOptions([])
     setQuestionErr('')
     setAssessmentErr('')
@@ -322,6 +325,7 @@ function AssessmentStudioPage() {
       qPrompt,
       qMaxGrade,
       progLang,
+      langVersion,
       options: [...options],
     }
 
@@ -347,6 +351,7 @@ function AssessmentStudioPage() {
     setQPrompt(question.qPrompt)
     setQMaxGrade(question.qMaxGrade)
     setprogLang(question.progLang || '')
+    setLangVersion(question.langVersion || '')
     setOptions([...(question.options || [])])
     setQuestionErr('')
   }
@@ -364,6 +369,7 @@ function AssessmentStudioPage() {
     setQPrompt('')
     setQMaxGrade(0)
     setprogLang('')
+    setLangVersion('')
     setOptions([])
     setQuestionErr('')
   }
@@ -374,6 +380,7 @@ function AssessmentStudioPage() {
     setQPrompt('')
     setQMaxGrade(0)
     setprogLang('')
+    setLangVersion('')
     setOptions([])
     setQuestionErr('')
   }
@@ -423,17 +430,27 @@ function AssessmentStudioPage() {
         />
       </div>
       {qType === 'CODING' && (
-        <div className="form-group">
+        <div className="form-group form-group--prog-lang">
           <label htmlFor={`${idPrefix}-question-prog-lang`}>
             Programming Language
           </label>
-          <input
-            type="text"
+          <select
+            className="prog-lang-select"
             id={`${idPrefix}-question-prog-lang`}
             name={`${idPrefix}-question-prog-lang`}
-            value={progLang}
-            onChange={(e) => setprogLang(e.target.value)}
-          />
+            value={progLang ? `${progLang} ${langVersion}` : ''}
+            onChange={(e) => {
+              const [lang, version] = e.target.value.split(' ')
+              setprogLang(lang)
+              setLangVersion(version)
+            }}
+          >
+            <option value="" disabled>
+              Select Programming Language
+            </option>
+            <option value="cpp 10.2.0">C++ 10.2.0</option>
+            <option value="python 3.12.0">Python 3.12.0</option>
+          </select>
         </div>
       )}
       {qType === 'MCQ' && (
@@ -899,7 +916,7 @@ function AssessmentStudioPage() {
                         {question.progLang && (
                           <>
                             <strong>Programming Language:</strong>
-                            <p>{question.progLang}</p>
+                            <p>{question.progLang} <span className="lang-version">{question.langVersion}</span></p>
                           </>
                         )}
                         {question.qType === 'MCQ' &&
