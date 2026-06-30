@@ -17,6 +17,7 @@ import { useAuth } from '../components/auth/AuthWrapper'
 import {
   buildDueDateTime,
   formatDueDateTimeLabel,
+  getAssessmentStatus,
 } from '../utils/assessmentDue'
 
 const API_BASE =
@@ -41,15 +42,7 @@ function AssignmentRow({
   onRowClick,
 }) {
   const icon = ASSIGNMENT_ICONS[assignment.question_type] ?? faFile
-  const dueAt = buildDueDateTime(assignment.due_date, assignment.due_time)
-  const isPastDue = dueAt ? currentDateTime > dueAt : false
-
-  const submittedAt = buildDueDateTime(
-    assignment.date_submitted,
-    assignment.time_submitted
-  )
-  const lateSubmitted =
-    assignment.has_submitted && submittedAt && submittedAt > dueAt
+  const status = getAssessmentStatus(assignment)
   return (
     <div
       className="assignment-row"
@@ -135,15 +128,15 @@ function AssignmentRow({
           </>
         ) : (
           <>
-            {assignment.has_submitted && !lateSubmitted ? (
+            {status === 'submitted' ? (
               <span className="assignment-status-badge assignment-status-badge--submitted">
                 Submitted
               </span>
-            ) : assignment.has_submitted && lateSubmitted ? (
+            ) : status === 'late' ? (
               <span className="assignment-status-badge assignment-status-badge--late-submitted">
                 Late Submitted
               </span>
-            ) : isPastDue ? (
+            ) : status === 'missing' ? (
               <span className="assignment-status-badge assignment-status-badge--missing">
                 Missing
               </span>

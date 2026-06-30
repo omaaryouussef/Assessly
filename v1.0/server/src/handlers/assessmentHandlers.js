@@ -806,7 +806,9 @@ export const runCode = async (req, res) => {
   const { code, progLang, progVersion } = req.body;
 
   if (!code || !progLang) {
-    return res.status(400).json({ error: "Code and programming language are required" });
+    return res
+      .status(400)
+      .json({ error: "Code and programming language are required" });
   }
 
   const pistonUrl =
@@ -814,17 +816,17 @@ export const runCode = async (req, res) => {
 
   try {
     const pistonPayload = {
-        language: progLang,
-        version: progVersion,
-        files: [
-          {
-            content: code,
-          },
-        ],
-        run_timeout: 2000,
-      };
+      language: progLang,
+      version: progVersion,
+      files: [
+        {
+          content: code,
+        },
+      ],
+      run_timeout: 2000,
+    };
 
-      const result = await fetch(pistonUrl, {
+    const result = await fetch(pistonUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(pistonPayload),
@@ -842,4 +844,23 @@ export const runCode = async (req, res) => {
   }
 };
 
+export const getAllAssessments = async (req, res) => {
+  const { user_id: userId, role } = req.user;
+  const { courseId } = req.params;
+  try {
+    const assessments = await db.query(
+      `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time, a.is_published, a.is_closed,
+        (sa.assessment_id IS NOT NULL) AS has_submitted, sa.grade, sa.percent, TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa.time_submitted
+      FROM assessment a LEFT JOIN student_assessment sa
+      ON a.assessment_id = sa.assessment_id
+      AND sa.student_id = $1
+      WHERE a.course_id = $2`,
+      [userId, courseId],
+    );
 
+    return res.status(200).json(assessments.rows);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to get all assessments" });
+  }
+};

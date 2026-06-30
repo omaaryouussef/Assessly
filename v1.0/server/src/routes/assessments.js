@@ -12,6 +12,7 @@ import {
   updateAssessment,
   submitAssessment,
   runCode,
+  getAllAssessments,
 } from "../handlers/assessmentHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
@@ -76,6 +77,13 @@ assessmentsRouter.post(
   authenticate,
   authorize("STUDENT", "INSTRUCTOR", "TA"),
   runCode,
+);
+
+assessmentsRouter.get(
+  "/all/:courseId",
+  authenticate,
+  authorize("STUDENT"),
+  getAllAssessments,
 );
 
 export default assessmentsRouter;

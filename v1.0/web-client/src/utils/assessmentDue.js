@@ -63,3 +63,27 @@ export function formatCountdown(totalSeconds) {
 
   return `${pad(minutes)}:${pad(seconds)}`
 }
+
+
+
+export function getAssessmentStatus(assessment, currentDateTime = new Date()) {
+  const dueAt = buildDueDateTime(
+    assessment.due_date,
+    assessment.due_time
+  );
+
+  const submittedAt = assessment.has_submitted
+    ? buildDueDateTime(
+        assessment.date_submitted,
+        assessment.time_submitted
+      )
+    : null;
+
+  if (assessment.has_submitted) {
+        return submittedAt > dueAt ? "late" : "submitted";
+  }
+
+  return dueAt && currentDateTime > dueAt
+    ? "missing"
+    : "available";
+}
