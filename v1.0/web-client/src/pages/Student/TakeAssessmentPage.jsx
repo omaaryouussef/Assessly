@@ -14,6 +14,8 @@ import {
   formatDueDate,
   formatDueTime,
   formatCountdown,
+  formatSubmissionDate,
+  formatSubmissionTime,
 } from '../../utils/assessmentDue'
 
 const API_BASE =
@@ -264,7 +266,9 @@ function TakeAssessmentPage() {
 
     setAssessmentErr('')
     setIsSubmitting(true)
-
+    const now = new Date()
+    const submissionDate = formatSubmissionDate(now)
+    const submissionTime = formatSubmissionTime(now)
     const submissionAnswers = Object.fromEntries(
       questionsList.map((question) => [
         question.id,
@@ -282,7 +286,11 @@ function TakeAssessmentPage() {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ answers: submissionAnswers }),
+          body: JSON.stringify({
+            answers: submissionAnswers,
+            todayDate: submissionDate,
+            todayTime: submissionTime,
+          }),
         }
       )
       const data = await response.json()

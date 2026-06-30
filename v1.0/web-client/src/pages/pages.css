@@ -2063,7 +2063,7 @@
 
 .grades-table th {
   padding: 14px 20px;
-  text-align: left;
+  text-align: center;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -2071,9 +2071,9 @@
   color: #94a3b8;
 }
 
-.grades-table th:nth-child(2),
-.grades-table th:nth-child(3),
-.grades-table th:nth-child(4) {
+.view-grades-page:not(.instructor-grades-page) .grades-table th:nth-child(2),
+.view-grades-page:not(.instructor-grades-page) .grades-table th:nth-child(3),
+.view-grades-page:not(.instructor-grades-page) .grades-table th:nth-child(4) {
   width: 140px;
   text-align: center;
 }
@@ -2159,6 +2159,233 @@
   text-align: center;
   font-size: 14px;
   color: var(--light-text-color);
+}
+
+/* Instructor all-students grades table */
+.instructor-grades-page .instructor-grades-table-card {
+  overflow-x: auto;
+}
+
+.instructor-grades-table {
+  min-width: 720px;
+  table-layout: auto;
+}
+
+.instructor-grades-table th.instructor-grades-student-head {
+  min-width: 160px;
+  vertical-align: bottom;
+  text-align: center;
+}
+
+.instructor-grades-group-head {
+  text-align: center;
+  color: var(--bold-text-color);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.instructor-grades-group-head--status {
+  background: #fafafa;
+}
+
+.instructor-grades-status-word {
+  display: block;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.instructor-grades-status-word--submitted {
+  color: #15803d;
+}
+
+.instructor-grades-status-word--missing {
+  color: #b91c1c;
+}
+
+.instructor-grades-status-word--available {
+  color: #1d4ed8;
+}
+
+.instructor-grades-status-word--late {
+  color: #c2410c;
+}
+
+.instructor-grades-subhead {
+  min-width: 148px;
+  max-width: 200px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.instructor-grades-subhead--status {
+  color: #94a3b8;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.instructor-grades-student-cell {
+  font-weight: 600;
+  color: var(--bold-text-color);
+  text-align: center;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #ffffff;
+  box-shadow: 1px 0 0 #eef2f6;
+}
+
+.instructor-grades-table .grades-table-row:hover .instructor-grades-student-cell {
+  background: #f8fafc;
+}
+
+.instructor-grades-assessment-cell,
+.instructor-grades-status-cell {
+  text-align: center;
+  vertical-align: top;
+  min-width: 148px;
+}
+
+.instructor-grades-assessment-cell-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.instructor-grades-assessment-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.instructor-grades-assessment-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.instructor-grades-input {
+  width: 100%;
+  max-width: 120px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
+  text-align: center;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.instructor-grades-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.instructor-grades-input:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.instructor-grades-input:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.instructor-grades-error {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.instructor-grades-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+}
+
+.instructor-grades-save-btn {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: default;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.instructor-grades-save-btn--dirty {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.instructor-grades-save-btn--dirty:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.instructor-grades-save-btn:disabled {
+  opacity: 1;
+}
+
+.instructor-grades-input--dirty {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.instructor-grades-input--dirty:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.instructor-grades-modal-error {
+  margin-top: 12px;
+  margin-bottom: 0;
 }
 
 .quiz-close-btn {

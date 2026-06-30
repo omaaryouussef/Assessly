@@ -81,7 +81,7 @@ export const getAssignmentsByCourseId = async (req, res) => {
       const result = await db.query(
         `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
-                (sa_sub.id IS NOT NULL) AS has_submitted, TO_CHAR(sa_sub.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa_sub.time_submitted AS time_submitted
+                (sa_sub.date_submitted IS NOT NULL) AS has_submitted, TO_CHAR(sa_sub.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa_sub.time_submitted AS time_submitted
          FROM assessment a
          INNER JOIN student_access_assessments saa ON saa.assessment_id = a.assessment_id
          LEFT JOIN student_assessment sa_sub
@@ -125,7 +125,7 @@ async function getTimedAssessmentsByCourseId(req, res, assessType) {
       const result = await db.query(
         `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
                 a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
-                (sa_sub.id IS NOT NULL) AS has_submitted
+                (sa_sub.date_submitted IS NOT NULL) AS has_submitted
          FROM assessment a
          INNER JOIN student_access_assessments saa ON saa.assessment_id = a.assessment_id
          LEFT JOIN student_assessment sa_sub
@@ -724,6 +724,10 @@ export const getAssessmentById = async (req, res) => {
 export const submitAssessment = async (req, res) => {
   const { assessmentId } = req.params;
   const answersByQuestion = req.body?.answers ?? req.body;
+  const todayDate =
+    req.body?.todayDate ?? new Date().toLocaleDateString("en-CA");
+  const todayTime =
+    req.body?.todayTime ?? new Date().toLocaleTimeString("en-CA");
   const { user_id: userId } = req.user;
 
   if (!answersByQuestion || typeof answersByQuestion !== "object") {
@@ -739,15 +743,6 @@ export const submitAssessment = async (req, res) => {
       return res.status(404).json({ error: "Assessment not found" });
     }
 
-    const existingSubmission = await db.query(
-      `SELECT id FROM student_assessment
-       WHERE student_id = $1 AND assessment_id = $2`,
-      [userId, assessmentId],
-    );
-    if (existingSubmission.rows.length > 0) {
-      return res.status(400).json({ error: "Assessment already submitted" });
-    }
-
     const questions = await db.query(
       "SELECT question_id FROM question WHERE assessment_id = $1",
       [assessmentId],
@@ -756,41 +751,47 @@ export const submitAssessment = async (req, res) => {
       return res.status(404).json({ error: "Questions not found" });
     }
 
-    await db.query("BEGIN");
-
-    for (const question of questions.rows) {
-      const questionId = question.question_id;
-      const rawAnswer =
-        answersByQuestion[questionId]?.answer ??
-        answersByQuestion[String(questionId)]?.answer;
-      const answer =
-        rawAnswer === undefined || rawAnswer === null ? "" : String(rawAnswer);
-
-      await db.query(
-        `INSERT INTO student_question_answer
-          (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [0, answer, 0, 0, userId, questionId],
-      );
-    }
-
-    const submission = await db.query(
-      `INSERT INTO student_assessment (grade, percent, student_id, assessment_id)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id`,
-      [0, 0, userId, assessmentId],
+    const existingSubmission = await db.query(
+      `SELECT id FROM student_assessment
+       WHERE student_id = $1 AND assessment_id = $2`,
+      [userId, assessmentId],
     );
+    if (existingSubmission.rows.length > 0) {
+      await db.query(
+        "UPDATE student_assessment SET date_submitted = $1, time_submitted = $2 WHERE student_id = $3 AND assessment_id = $4",
+        [todayDate, todayTime, userId, assessmentId],
+      );
+      for (const question of questions.rows) {
+        const questionId = question.question_id;
+        const rawAnswer =
+          answersByQuestion[questionId]?.answer ??
+          answersByQuestion[String(questionId)]?.answer;
+        const answer =
+          rawAnswer === undefined || rawAnswer === null
+            ? ""
+            : String(rawAnswer);
 
-    if (submission.rows.length === 0) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ error: "Failed to submit assessment" });
+        await db.query(
+          `INSERT INTO student_question_answer
+            (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [0, answer, 0, 0, userId, questionId],
+        );
+      }
+      return res.status(200).json({ message: "Assessment Updated Successfully" });
+    }else{
+      const submission = await db.query(
+        `INSERT INTO student_assessment (grade, percent, student_id, assessment_id, date_submitted, time_submitted)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id`,
+        [null, null, userId, assessmentId, todayDate, todayTime],
+      );
+      if (submission.rows.length === 0) {
+        return res.status(400).json({ error: "Failed to submit assessment" });
+      }
+      return res.status(200).json({ message: "Assessment Submitted Successfully" });
     }
 
-    await db.query("COMMIT");
-
-    return res
-      .status(200)
-      .json({ message: "Assessment submitted successfully" });
   } catch (error) {
     try {
       await db.query("ROLLBACK");
@@ -850,11 +851,12 @@ export const getAllAssessments = async (req, res) => {
   try {
     const assessments = await db.query(
       `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time, a.is_published, a.is_closed,
-        (sa.assessment_id IS NOT NULL) AS has_submitted, sa.grade, sa.percent, TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa.time_submitted
+        (sa.date_submitted IS NOT NULL) AS has_submitted, sa.grade, sa.percent, TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa.time_submitted
       FROM assessment a LEFT JOIN student_assessment sa
       ON a.assessment_id = sa.assessment_id
       AND sa.student_id = $1
-      WHERE a.course_id = $2`,
+      LEFT JOIN student_access_assessments saa ON saa.assessment_id = a.assessment_id AND saa.student_id = $1
+      WHERE a.course_id = $2 AND saa.can_access = true`,
       [userId, courseId],
     );
 
@@ -862,5 +864,144 @@ export const getAllAssessments = async (req, res) => {
   } catch (error) {
     console.log("Error: ", error);
     return res.status(500).json({ error: "Failed to get all assessments" });
+  }
+};
+
+export const getAllAssessmentsForAllStudents = async (req, res) => {
+  const { courseId } = req.params;
+  const { user_id: userId, role } = req.user;
+  const assessmentsForAllStudents = [];
+  try {
+    const students = await db.query(
+      `SELECT u.name, u.user_id FROM users u INNER JOIN student_course sc ON u.user_id = sc.student_id WHERE sc.course_id = $1`,
+      [courseId],
+    );
+
+    for (const student of students.rows) {
+      const assessments = await db.query(
+        `SELECT a.assessment_id, a.title, a.assess_type, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time, a.is_published, a.is_closed,
+          (sa.date_submitted IS NOT NULL) AS has_submitted, sa.grade, TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa.time_submitted
+        FROM assessment a LEFT JOIN student_assessment sa
+        ON a.assessment_id = sa.assessment_id
+        AND sa.student_id = $1
+        WHERE a.course_id = $2`,
+        [student.user_id, courseId],
+      );
+      assessmentsForAllStudents.push({
+        student: student.name,
+        student_id: student.user_id,
+        assessments: assessments.rows,
+      });
+    }
+    return res.status(200).json(assessmentsForAllStudents);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Failed to get all assessments for all students" });
+  }
+};
+
+export const saveStudentGrades = async (req, res) => {
+  const { courseId } = req.params;
+  const { grades } = req.body;
+  const { user_id: userId, role } = req.user;
+
+  if (!Array.isArray(grades) || grades.length === 0) {
+    return res.status(400).json({ error: "grades array is required" });
+  }
+
+  try {
+    if (!(await canManageCourse(courseId, userId, role))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    await db.query("BEGIN");
+
+    for (const entry of grades) {
+      const studentId = Number(entry.studentId);
+      const assessmentId = Number(entry.assessmentId);
+      const grade = entry.grade;
+
+      if (
+        !studentId ||
+        !assessmentId ||
+        grade === "" ||
+        grade === null ||
+        grade === undefined
+      ) {
+        continue;
+      }
+
+      const numericGrade = Number(grade);
+      if (Number.isNaN(numericGrade)) {
+        await db.query("ROLLBACK");
+        return res.status(400).json({ error: "Grade must be a number" });
+      }
+
+      const assessment = await db.query(
+        `SELECT assessment_id, max_grade, course_id
+         FROM assessment
+         WHERE assessment_id = $1 AND course_id = $2`,
+        [assessmentId, courseId],
+      );
+      if (assessment.rows.length === 0) {
+        await db.query("ROLLBACK");
+        return res.status(400).json({ error: "Invalid assessment for course" });
+      }
+
+      const maxGrade = Number(assessment.rows[0].max_grade);
+      if (numericGrade < 0 || numericGrade > maxGrade) {
+        await db.query("ROLLBACK");
+        return res.status(400).json({
+          error: `Grade must be between 0 and ${maxGrade}`,
+        });
+      }
+
+      const percent = maxGrade > 0 ? (numericGrade / maxGrade) * 100 : 0;
+
+      const enrollment = await db.query(
+        `SELECT 1 FROM student_course WHERE student_id = $1 AND course_id = $2`,
+        [studentId, courseId],
+      );
+      if (enrollment.rows.length === 0) {
+        await db.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Student not enrolled in course" });
+      }
+
+      const existing = await db.query(
+        `SELECT id FROM student_assessment
+         WHERE student_id = $1 AND assessment_id = $2`,
+        [studentId, assessmentId],
+      );
+
+      if (existing.rows.length > 0) {
+        await db.query(
+          `UPDATE student_assessment
+           SET grade = $1, percent = $2
+           WHERE student_id = $3 AND assessment_id = $4`,
+          [numericGrade, percent, studentId, assessmentId],
+        );
+      } else {
+        await db.query(
+          `INSERT INTO student_assessment (grade, percent, student_id, assessment_id)
+           VALUES ($1, $2, $3, $4)`,
+          [numericGrade, percent, studentId, assessmentId],
+        );
+      }
+    }
+
+    await db.query("COMMIT");
+    return res.status(200).json({ message: "Grades saved successfully" });
+  } catch (error) {
+    try {
+      await db.query("ROLLBACK");
+    } catch {
+      // No active transaction to roll back.
+    }
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to save grades" });
   }
 };

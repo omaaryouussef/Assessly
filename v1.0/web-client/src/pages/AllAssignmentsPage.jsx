@@ -104,7 +104,7 @@ function AssignmentRow({
             >
               {assignment.is_published ? 'Published' : 'Not Published'}
             </span>
-            {isPastDue && (
+            {status === 'past_due' && (
               <span className="assignment-status-badge assignment-status-badge--past-due">
                 Past Due
               </span>

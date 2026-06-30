@@ -13,6 +13,8 @@ import {
   submitAssessment,
   runCode,
   getAllAssessments,
+  getAllAssessmentsForAllStudents,
+  saveStudentGrades,
 } from "../handlers/assessmentHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
@@ -84,6 +86,20 @@ assessmentsRouter.get(
   authenticate,
   authorize("STUDENT"),
   getAllAssessments,
+);
+
+assessmentsRouter.get(
+  "/all-students/:courseId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA"),
+  getAllAssessmentsForAllStudents,
+);
+
+assessmentsRouter.patch(
+  "/grades/:courseId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA"),
+  saveStudentGrades,
 );
 
 export default assessmentsRouter;
