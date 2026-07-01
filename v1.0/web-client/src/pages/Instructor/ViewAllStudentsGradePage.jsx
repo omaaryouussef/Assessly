@@ -47,7 +47,7 @@ function AssessmentGradeCell({
         <button
           type="button"
           className="instructor-grades-assessment-link"
-          onClick={() => onOpenAssessment(assessment)}
+          onClick={() => onOpenAssessment(assessment, studentId, studentName)}
         >
           {assessment.title}
         </button>
@@ -293,10 +293,13 @@ function ViewAllStudentsGradePage() {
     setSaveError('')
   }
 
-  const openAssessment = (assessment) => {
-    navigate(`/course/${courseId}/assessment-studio`, {
-      state: { assessmentToEdit: assessment },
-    })
+  const openAssessment = (assessment, studentId, studentName) => {
+    navigate(
+      `/course/${courseId}/feedback/${assessment.assessment_id}/${studentId}`,
+      {
+        state: { assessmentToGrade: assessment, studentId, studentName },
+      }
+    )
   }
 
   const columnCount = assessmentColumns.length

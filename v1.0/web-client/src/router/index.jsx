@@ -50,7 +50,10 @@ const router = createBrowserRouter(
           <Route path="course/:courseId/exams" element={<AllExamsPage />} />
           <Route path="course/:courseId/quizzes" element={<AllQuizzesPage />} />
           <Route path="course/:courseId/people" element={<PeoplePage />} />
-          {/* <Route path="course/:courseId/feedback" element={<AssessmentFeedbackPage />} /> */}
+          <Route
+            path="course/:courseId/feedback/:assessmentId/:studentId"
+            element={<AssessmentFeedbackPage />}
+          />
 
           {/* Navbar related routes */}
           <Route path="schedule" element={<SchedulePage />} />
@@ -80,7 +83,6 @@ const router = createBrowserRouter(
               element={<RemoveStudentPage />}
             />
           </Route>
-
 
           {/* TA and Student shared routes */}
           <Route element={<RoleGuard allowedRoles={['TA', 'STUDENT']} />}>

@@ -15,6 +15,11 @@ import {
   getAllAssessments,
   getAllAssessmentsForAllStudents,
   saveStudentGrades,
+  getStudentAnswers,
+  getQuestionsFeedback,
+  saveQuestionGradesForStudent,
+  upsertQuestionFeedback,
+  resolveQuestionFeedback,
 } from "../handlers/assessmentHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
@@ -100,6 +105,41 @@ assessmentsRouter.patch(
   authenticate,
   authorize("INSTRUCTOR", "TA"),
   saveStudentGrades,
+);
+
+assessmentsRouter.patch(
+  "/questions-feedback/:feedbackId/resolve",
+  authenticate,
+  authorize("INSTRUCTOR", "TA", "STUDENT"),
+  resolveQuestionFeedback,
+);
+
+assessmentsRouter.get(
+  "/:assessmentId/student-answers/:studentId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA", "STUDENT"),
+  getStudentAnswers,
+);
+
+assessmentsRouter.get(
+  "/:assessmentId/questions-feedback/:studentId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA", "STUDENT"),
+  getQuestionsFeedback,
+);
+
+assessmentsRouter.post(
+  "/:assessmentId/questions-feedback/:studentId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA", "STUDENT"),
+  upsertQuestionFeedback,
+);
+
+assessmentsRouter.patch(
+  "/:assessmentId/question-grades/:studentId",
+  authenticate,
+  authorize("INSTRUCTOR", "TA"),
+  saveQuestionGradesForStudent,
 );
 
 export default assessmentsRouter;

@@ -131,3 +131,15 @@ assessment_id INT NOT NULL,
 FOREIGN KEY (student_id) REFERENCES users(user_id),
 FOREIGN KEY (assessment_id) REFERENCES assessment(assessment_id)
 )
+
+
+CREATE TABLE question_feedback(
+id SERIAL PRIMARY KEY,
+feedback VARCHAR(1000), 
+resolved BOOLEAN DEFAULT FALSE,
+user_id INT NOT NULL,
+question_id INT NOT NULL,
+student_question_answer_id INT NOT NULL,
+FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+FOREIGN KEY (question_id) REFERENCES question(question_id) ON DELETE CASCADE,
+FOREIGN KEY (student_question_answer_id) REFERENCES student_question_answer(id) ON DELETE CASCADE);

@@ -22,6 +22,57 @@ async function canManageCourse(courseId, userId, role) {
   return false;
 }
 
+async function getAssessmentCourseId(assessmentId) {
+  const result = await db.query(
+    `SELECT course_id FROM assessment WHERE assessment_id = $1`,
+    [assessmentId],
+  );
+  return result.rows[0]?.course_id ?? null;
+}
+
+async function canAccessStudentFeedback(assessmentId, studentId, userId, role) {
+  if (role === "STUDENT") {
+    return Number(userId) === Number(studentId);
+  }
+
+  if (role === "INSTRUCTOR" || role === "TA") {
+    const courseId = await getAssessmentCourseId(assessmentId);
+    if (!courseId) return false;
+    return canManageCourse(courseId, userId, role);
+  }
+
+  return false;
+}
+
+function isGraderRole(role) {
+  return role === "INSTRUCTOR" || role === "TA";
+}
+
+async function getLatestStudentAnswerId(studentId, questionId) {
+  const result = await db.query(
+    `SELECT id FROM student_question_answer
+     WHERE student_id = $1 AND question_id = $2
+     ORDER BY id DESC
+     LIMIT 1`,
+    [studentId, questionId],
+  );
+  return result.rows[0]?.id ?? null;
+}
+
+async function getOrCreateStudentAnswerId(studentId, questionId) {
+  const existingId = await getLatestStudentAnswerId(studentId, questionId);
+  if (existingId) return existingId;
+
+  const insertResult = await db.query(
+    `INSERT INTO student_question_answer
+      (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id`,
+    [0, "", 0, 0, studentId, questionId],
+  );
+  return insertResult.rows[0].id;
+}
+
 const QUESTION_TYPE_SUBQUERY = `(SELECT q.question_type FROM question q WHERE q.assessment_id = a.assessment_id LIMIT 1) AS question_type`;
 
 const mapAssessment = (row) => ({
@@ -724,10 +775,13 @@ export const getAssessmentById = async (req, res) => {
 export const submitAssessment = async (req, res) => {
   const { assessmentId } = req.params;
   const answersByQuestion = req.body?.answers ?? req.body;
+
   const todayDate =
     req.body?.todayDate ?? new Date().toLocaleDateString("en-CA");
+
   const todayTime =
     req.body?.todayTime ?? new Date().toLocaleTimeString("en-CA");
+
   const { user_id: userId } = req.user;
 
   if (!answersByQuestion || typeof answersByQuestion !== "object") {
@@ -735,71 +789,105 @@ export const submitAssessment = async (req, res) => {
   }
 
   try {
+    await db.query("BEGIN");
+
+    // Verify assessment exists
     const assessment = await db.query(
       "SELECT assessment_id FROM assessment WHERE assessment_id = $1",
-      [assessmentId],
+      [assessmentId]
     );
+
     if (assessment.rows.length === 0) {
+      await db.query("ROLLBACK");
       return res.status(404).json({ error: "Assessment not found" });
     }
 
+    // Get all questions
     const questions = await db.query(
       "SELECT question_id FROM question WHERE assessment_id = $1",
-      [assessmentId],
+      [assessmentId]
     );
+
     if (questions.rows.length === 0) {
+      await db.query("ROLLBACK");
       return res.status(404).json({ error: "Questions not found" });
     }
 
+    // Check whether the student has already submitted
     const existingSubmission = await db.query(
-      `SELECT id FROM student_assessment
-       WHERE student_id = $1 AND assessment_id = $2`,
-      [userId, assessmentId],
+      `SELECT id
+       FROM student_assessment
+       WHERE student_id = $1
+         AND assessment_id = $2`,
+      [userId, assessmentId]
     );
+
+    let message;
+
     if (existingSubmission.rows.length > 0) {
       await db.query(
-        "UPDATE student_assessment SET date_submitted = $1, time_submitted = $2 WHERE student_id = $3 AND assessment_id = $4",
-        [todayDate, todayTime, userId, assessmentId],
+        `UPDATE student_assessment
+         SET date_submitted = $1,
+             time_submitted = $2
+         WHERE student_id = $3
+           AND assessment_id = $4`,
+        [todayDate, todayTime, userId, assessmentId]
       );
-      for (const question of questions.rows) {
-        const questionId = question.question_id;
-        const rawAnswer =
-          answersByQuestion[questionId]?.answer ??
-          answersByQuestion[String(questionId)]?.answer;
-        const answer =
-          rawAnswer === undefined || rawAnswer === null
-            ? ""
-            : String(rawAnswer);
 
-        await db.query(
-          `INSERT INTO student_question_answer
-            (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [0, answer, 0, 0, userId, questionId],
-        );
-      }
-      return res.status(200).json({ message: "Assessment Updated Successfully" });
-    }else{
-      const submission = await db.query(
-        `INSERT INTO student_assessment (grade, percent, student_id, assessment_id, date_submitted, time_submitted)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id`,
-        [null, null, userId, assessmentId, todayDate, todayTime],
+      message = "Assessment Updated Successfully";
+    } else {
+      await db.query(
+        `INSERT INTO student_assessment
+          (grade, percent, student_id, assessment_id, date_submitted, time_submitted)
+         VALUES
+          (NULL, NULL, $1, $2, $3, $4)`,
+        [userId, assessmentId, todayDate, todayTime]
       );
-      if (submission.rows.length === 0) {
-        return res.status(400).json({ error: "Failed to submit assessment" });
-      }
-      return res.status(200).json({ message: "Assessment Submitted Successfully" });
+
+      message = "Assessment Submitted Successfully";
     }
 
+    // Insert or update each answer
+    for (const question of questions.rows) {
+      const questionId = question.question_id;
+
+      const rawAnswer =
+        answersByQuestion[questionId]?.answer ??
+        answersByQuestion[String(questionId)]?.answer;
+
+      const answer =
+        rawAnswer === undefined || rawAnswer === null
+          ? ""
+          : String(rawAnswer);
+
+      await db.query(
+        `
+        INSERT INTO student_question_answer
+          (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
+        VALUES
+          (0, $1, 0, 0, $2, $3)
+        ON CONFLICT (student_id, question_id)
+        DO UPDATE SET
+          answer = EXCLUDED.answer,
+          grade = EXCLUDED.grade,
+          active_time_sec = EXCLUDED.active_time_sec,
+          stale_time_sec = EXCLUDED.stale_time_sec
+        `,
+        [answer, userId, questionId]
+      );
+    }
+
+    await db.query("COMMIT");
+
+    return res.status(200).json({ message });
   } catch (error) {
-    try {
-      await db.query("ROLLBACK");
-    } catch {
-      // No active transaction to roll back.
-    }
-    console.log("Error: ", error);
-    return res.status(500).json({ error: "Failed to submit assessment" });
+    await db.query("ROLLBACK");
+
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Failed to submit assessment",
+    });
   }
 };
 
@@ -813,14 +901,30 @@ export const runCode = async (req, res) => {
   }
 
   const pistonUrl =
-    process.env.PISTON_API_URL || "http://localhost:2000/api/v2/execute";
+    process.env.PISTON_API_URL || "http://localhost:5050/api/v2/execute";
+
+  const languageAliases = {
+    cpp: "c++",
+    c: "c",
+    python: "python",
+  };
+  const pistonLanguage = languageAliases[progLang] ?? progLang;
+  const sourceFileName =
+    pistonLanguage === "c++"
+      ? "main.cpp"
+      : pistonLanguage === "c"
+        ? "main.c"
+        : pistonLanguage === "python"
+          ? "main.py"
+          : "main.txt";
 
   try {
     const pistonPayload = {
-      language: progLang,
+      language: pistonLanguage,
       version: progVersion,
       files: [
         {
+          name: sourceFileName,
           content: code,
         },
       ],
@@ -841,6 +945,12 @@ export const runCode = async (req, res) => {
     return res.status(200).json(data);
   } catch (error) {
     console.log("Error: ", error);
+    if (error?.cause?.code === "ECONNREFUSED") {
+      return res.status(503).json({
+        error:
+          "Code runner is unavailable. Start Piston with docker compose up -d api in the piston folder.",
+      });
+    }
     return res.status(500).json({ error: "Failed to run code" });
   }
 };
@@ -1003,5 +1113,364 @@ export const saveStudentGrades = async (req, res) => {
     }
     console.log("Error: ", error);
     return res.status(500).json({ error: "Failed to save grades" });
+  }
+};
+
+
+export const getStudentAnswers = async (req, res) => {
+  const { assessmentId, studentId } = req.params;
+  const { user_id: userId, role } = req.user;
+  const answers = {};
+  try {
+    const answersByQuestion = await db.query(
+      `SELECT sqa.question_id, sqa.answer, sqa.grade
+       FROM student_question_answer sqa
+       INNER JOIN question q ON q.question_id = sqa.question_id
+       WHERE q.assessment_id = $1 AND sqa.student_id = $2`,
+      [assessmentId, studentId],
+    );
+    for (const answer of answersByQuestion.rows) {
+      answers[answer.question_id] = {answer: answer.answer, grade: answer.grade};
+    }
+    return res.status(200).json(answers);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to get student answers" });
+  }
+};
+
+
+export const getQuestionsFeedback = async (req, res) => {
+  const { assessmentId, studentId } = req.params;
+  const { user_id: userId, role } = req.user;
+
+  try {
+    if (!(await canAccessStudentFeedback(assessmentId, studentId, userId, role))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const feedbackResult = await db.query(
+      `
+      SELECT
+          qf.id,
+          qf.question_id,
+          qf.feedback,
+          qf.resolved,
+          qf.user_id,
+          u.name,
+          u.role
+      FROM question_feedback qf
+      JOIN users u
+          ON qf.user_id = u.user_id
+      WHERE qf.student_question_answer_id IN (
+          SELECT sqa.id
+          FROM student_question_answer sqa
+          INNER JOIN question q ON q.question_id = sqa.question_id
+          WHERE q.assessment_id = $1 AND sqa.student_id = $2
+      )
+      `,
+      [assessmentId, studentId],
+    );
+
+    const questionsFeedback = {};
+
+    for (const row of feedbackResult.rows) {
+      if (!questionsFeedback[row.question_id]) {
+        questionsFeedback[row.question_id] = {
+          instructorFeedback: [],
+          studentFeedback: [],
+        };
+      }
+
+      const feedback = {
+        id: row.id,
+        userId: row.user_id,
+        userName: row.name,
+        feedback: row.feedback,
+        resolved: row.resolved,
+      };
+
+      if (row.role === "INSTRUCTOR" || row.role === "TA") {
+        questionsFeedback[row.question_id].instructorFeedback.push(feedback);
+      } else {
+        questionsFeedback[row.question_id].studentFeedback.push(feedback);
+      }
+    }
+
+    return res.status(200).json(questionsFeedback);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "Failed to get questions feedback",
+    });
+  }
+};
+
+export const saveQuestionGradesForStudent = async (req, res) => {
+  const { assessmentId, studentId } = req.params;
+  const { grades } = req.body;
+  const { user_id: userId, role } = req.user;
+
+  if (!isGraderRole(role)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  if (!Array.isArray(grades) || grades.length === 0) {
+    return res.status(400).json({ error: "grades array is required" });
+  }
+
+  try {
+    if (!(await canAccessStudentFeedback(assessmentId, studentId, userId, role))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const assessmentResult = await db.query(
+      `SELECT assessment_id, max_grade, course_id
+       FROM assessment
+       WHERE assessment_id = $1`,
+      [assessmentId],
+    );
+    if (assessmentResult.rows.length === 0) {
+      return res.status(404).json({ error: "Assessment not found" });
+    }
+
+    const assessment = assessmentResult.rows[0];
+    const assessmentMaxGrade = Number(assessment.max_grade);
+    let totalGrade = 0;
+
+    await db.query("BEGIN");
+
+    for (const entry of grades) {
+      const questionId = Number(entry.questionId);
+      const grade = entry.grade;
+
+      if (!questionId || grade === "" || grade === null || grade === undefined) {
+        continue;
+      }
+
+      const numericGrade = Number(grade);
+      if (Number.isNaN(numericGrade)) {
+        await db.query("ROLLBACK");
+        return res.status(400).json({ error: "Grade must be a number" });
+      }
+
+      const questionResult = await db.query(
+        `SELECT question_id, max_grade
+         FROM question
+         WHERE question_id = $1 AND assessment_id = $2`,
+        [questionId, assessmentId],
+      );
+      if (questionResult.rows.length === 0) {
+        await db.query("ROLLBACK");
+        return res.status(400).json({ error: "Invalid question for assessment" });
+      }
+
+      const questionMaxGrade = Number(questionResult.rows[0].max_grade);
+      if (numericGrade < 0 || numericGrade > questionMaxGrade) {
+        await db.query("ROLLBACK");
+        return res.status(400).json({
+          error: `Grade must be between 0 and ${questionMaxGrade}`,
+        });
+      }
+
+      const answerResult = await db.query(
+        `SELECT id FROM student_question_answer
+         WHERE student_id = $1 AND question_id = $2
+         ORDER BY id DESC
+         LIMIT 1`,
+        [studentId, questionId],
+      );
+
+      if (answerResult.rows.length > 0) {
+        await db.query(
+          `UPDATE student_question_answer
+           SET grade = $1
+           WHERE id = $2`,
+          [numericGrade, answerResult.rows[0].id],
+        );
+      } else {
+        await db.query(
+          `INSERT INTO student_question_answer
+            (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [numericGrade, "", 0, 0, studentId, questionId],
+        );
+      }
+
+      totalGrade += numericGrade;
+    }
+
+    const percent =
+      assessmentMaxGrade > 0 ? (totalGrade / assessmentMaxGrade) * 100 : 0;
+
+    const existingSubmission = await db.query(
+      `SELECT id FROM student_assessment
+       WHERE student_id = $1 AND assessment_id = $2`,
+      [studentId, assessmentId],
+    );
+
+    if (existingSubmission.rows.length > 0) {
+      await db.query(
+        `UPDATE student_assessment
+         SET grade = $1, percent = $2
+         WHERE student_id = $3 AND assessment_id = $4`,
+        [totalGrade, percent, studentId, assessmentId],
+      );
+    } else {
+      await db.query(
+        `INSERT INTO student_assessment (grade, percent, student_id, assessment_id)
+         VALUES ($1, $2, $3, $4)`,
+        [totalGrade, percent, studentId, assessmentId],
+      );
+    }
+
+    await db.query("COMMIT");
+    return res.status(200).json({
+      message: "Question grades saved successfully",
+      totalGrade,
+      percent,
+    });
+  } catch (error) {
+    try {
+      await db.query("ROLLBACK");
+    } catch {
+      // No active transaction to roll back.
+    }
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to save question grades" });
+  }
+};
+
+export const upsertQuestionFeedback = async (req, res) => {
+  const { assessmentId, studentId } = req.params;
+  const questionId = Number(req.body.questionId);
+  const { feedback } = req.body;
+  const { user_id: userId, role, name } = req.user;
+
+  const trimmedFeedback = feedback?.trim();
+  if (!questionId || !trimmedFeedback) {
+    return res
+      .status(400)
+      .json({ error: "questionId and feedback are required" });
+  }
+
+  try {
+    if (!(await canAccessStudentFeedback(assessmentId, studentId, userId, role))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const questionResult = await db.query(
+      `SELECT question_id FROM question
+       WHERE question_id = $1 AND assessment_id = $2`,
+      [questionId, assessmentId],
+    );
+    if (questionResult.rows.length === 0) {
+      return res.status(400).json({ error: "Invalid question for assessment" });
+    }
+
+    const answerId = await getOrCreateStudentAnswerId(studentId, questionId);
+
+    const existing = await db.query(
+      `SELECT id FROM question_feedback
+       WHERE question_id = $1
+         AND user_id = $2
+         AND student_question_answer_id = $3
+         AND resolved = false`,
+      [questionId, userId, answerId],
+    );
+
+    let savedFeedback;
+    if (existing.rows.length > 0) {
+      const updateResult = await db.query(
+        `UPDATE question_feedback
+         SET feedback = $1
+         WHERE id = $2
+         RETURNING id, question_id, feedback, resolved, user_id`,
+        [trimmedFeedback, existing.rows[0].id],
+      );
+      savedFeedback = updateResult.rows[0];
+    } else {
+      const insertResult = await db.query(
+        `INSERT INTO question_feedback
+          (feedback, resolved, user_id, question_id, student_question_answer_id)
+         VALUES ($1, false, $2, $3, $4)
+         RETURNING id, question_id, feedback, resolved, user_id`,
+        [trimmedFeedback, userId, questionId, answerId],
+      );
+      savedFeedback = insertResult.rows[0];
+    }
+
+    return res.status(200).json({
+      feedback: {
+        id: savedFeedback.id,
+        userId: savedFeedback.user_id,
+        userName: name,
+        feedback: savedFeedback.feedback,
+        resolved: savedFeedback.resolved,
+        questionId: savedFeedback.question_id,
+      },
+    });
+  } catch (error) {
+    console.error("upsertQuestionFeedback error:", error);
+    return res.status(500).json({ error: "Failed to save question feedback" });
+  }
+};
+
+export const resolveQuestionFeedback = async (req, res) => {
+  const { feedbackId } = req.params;
+  const { user_id: userId, role } = req.user;
+
+  try {
+    const feedbackResult = await db.query(
+      `SELECT qf.id, qf.question_id, qf.feedback, qf.resolved, qf.user_id,
+              sqa.student_id, u.role AS author_role, q.assessment_id
+       FROM question_feedback qf
+       INNER JOIN student_question_answer sqa ON sqa.id = qf.student_question_answer_id
+       INNER JOIN users u ON u.user_id = qf.user_id
+       INNER JOIN question q ON q.question_id = qf.question_id
+       WHERE qf.id = $1`,
+      [feedbackId],
+    );
+
+    if (feedbackResult.rows.length === 0) {
+      return res.status(404).json({ error: "Feedback not found" });
+    }
+
+    const row = feedbackResult.rows[0];
+    if (row.resolved) {
+      return res.status(200).json({ message: "Feedback already resolved" });
+    }
+
+    if (!(await canAccessStudentFeedback(
+      row.assessment_id,
+      row.student_id,
+      userId,
+      role,
+    ))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    if (Number(row.user_id) === Number(userId)) {
+      return res.status(400).json({ error: "You cannot resolve your own comment" });
+    }
+
+    const authorRole = row.author_role;
+    const canResolve =
+      (isGraderRole(role) && authorRole === "STUDENT") ||
+      (role === "STUDENT" && (authorRole === "INSTRUCTOR" || authorRole === "TA"));
+
+    if (!canResolve) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    await db.query(
+      `UPDATE question_feedback SET resolved = true WHERE id = $1`,
+      [feedbackId],
+    );
+
+    return res.status(200).json({ message: "Feedback resolved successfully" });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Failed to resolve question feedback" });
   }
 };
