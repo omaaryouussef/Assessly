@@ -52,9 +52,10 @@ export function isDueDateTimeInPast(dueDate, dueTime) {
 }
 
 export function formatCountdown(totalSeconds) {
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
+  const total = Math.max(0, Math.floor(Number(totalSeconds) || 0))
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = total % 60
   const pad = (value) => String(value).padStart(2, '0')
 
   if (hours > 0) {

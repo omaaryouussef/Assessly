@@ -323,9 +323,10 @@ function AllAssignmentsPage() {
                 onRowClick={
                   user?.role === 'STUDENT'
                     ? () =>
-                        navigate(`/course/${courseId}/take-assessment`, {
-                          state: { assessmentToTake: assignment },
-                        })
+                        navigate(
+                          `/course/${courseId}/take-assessment/${assignment.assessment_id}`,
+                          { state: { assessmentToTake: assignment } }
+                        )
                     : undefined
                 }
               />

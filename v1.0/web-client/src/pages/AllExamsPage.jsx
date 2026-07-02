@@ -525,8 +525,10 @@ function AllExamsPage() {
               setExamToDelete={setExamToDelete}
               onRowClick = {
                 user?.role === 'STUDENT' ? () => {
-                  navigate(`/course/${courseId}/take-assessment` , {
-                    state: {assessmentToTake: exam}})
+                  navigate(
+                    `/course/${courseId}/take-assessment/${exam.assessment_id}`,
+                    { state: { assessmentToTake: exam } }
+                  )
                 } : undefined
               }
             />

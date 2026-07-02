@@ -18,6 +18,8 @@ import {
   formatSubmissionTime,
 } from '../../utils/assessmentDue'
 
+import { isDraftEmpty, loadDraft, saveDraft, clearDraft } from '../../utils/takeAssessmentDraft'
+
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
@@ -101,7 +103,7 @@ function QuestionRow({
                     height="100%"
                     theme="vs-dark"
                     defaultLanguage={question.progLang}
-                    defaultValue={answers[question.id]?.answer ?? ''}
+                    value={answers[question.id]?.answer ?? ''}
                     onChange={(value) =>
                       setAnswers((prev) => ({
                         ...prev,
@@ -179,16 +181,25 @@ function QuestionRow({
 }
 
 function TakeAssessmentPage() {
-  const { assessmentToTake } = useLocation().state ?? {}
-  const { courseId } = useParams()
+  const { assessmentToTake: assessmentFromState } = useLocation().state ?? {}
+  const { courseId, assessmentId } = useParams()
   const navigate = useNavigate()
-  const { token } = useAuth()
+  const { user, token } = useAuth()
+  const studentId = user?.user_id ?? null
+  const resolvedAssessmentId =
+    assessmentId ?? assessmentFromState?.assessment_id ?? null
+
+  const startedAtRef = useRef(null)
+  const durationSecondsRef = useRef(0)
+  const [timerTick, setTimerTick] = useState(0)
+  const [draftResolved, setDraftResolved] = useState(false)
 
   // Assessment specifications
   const [title, setTitle] = useState('')
   const [type, setType] = useState('')
   const [duration, setDuration] = useState(0)
-  const [timeLeft, setTimeLeft] = useState(null)
+  const [dueDate, setDueDate] = useState(assessmentFromState?.due_date ?? null)
+  const [dueTime, setDueTime] = useState(assessmentFromState?.due_time ?? null)
   const [isTimeUp, setIsTimeUp] = useState(false)
   const [assessmentLoaded, setAssessmentLoaded] = useState(false)
   const [assessmentErr, setAssessmentErr] = useState('')
@@ -215,6 +226,38 @@ function TakeAssessmentPage() {
   const submittedRef = useRef(false)
   const isTimedAssessment = (type === 'QUIZ' || type === 'EXAM') && duration > 0
 
+  const getRemainingSeconds = useCallback(() => {
+    if (!isTimedAssessment || startedAtRef.current == null) return null
+    const elapsed = (Date.now() - startedAtRef.current) / 1000
+    return Math.max(0, Math.floor(durationSecondsRef.current - elapsed))
+  }, [isTimedAssessment, timerTick])
+
+  const remainingSeconds = getRemainingSeconds()
+
+  const buildDraftSnapshot = useCallback(
+    () => ({
+      answers,
+      codeOutputs,
+      currentQuestionIndex,
+      startedAt: startedAtRef.current,
+      durationSeconds: durationSecondsRef.current,
+    }),
+    [answers, codeOutputs, currentQuestionIndex]
+  )
+
+  useEffect(() => {
+    if (!draftResolved || !resolvedAssessmentId || !studentId) return
+    const snapshot = buildDraftSnapshot()
+    if (!isDraftEmpty(snapshot)) {
+      saveDraft(resolvedAssessmentId, studentId, snapshot)
+    }
+  }, [
+    buildDraftSnapshot,
+    draftResolved,
+    resolvedAssessmentId,
+    studentId,
+  ])
+
   const handleRunCode = useCallback(
     async (questionId, code, progLang, progVersion) => {
       if (!code) return
@@ -228,7 +271,7 @@ function TakeAssessmentPage() {
 
       try {
         const response = await fetch(
-          `${API_BASE}/api/assessments/${assessmentToTake.assessment_id}/run-code`,
+          `${API_BASE}/api/assessments/${resolvedAssessmentId}/run-code`,
           {
             method: 'POST',
             headers: {
@@ -257,11 +300,11 @@ function TakeAssessmentPage() {
         setRunningQuestionId(null)
       }
     },
-    [token, assessmentToTake?.assessment_id]
+    [token, resolvedAssessmentId]
   )
 
   const handleSubmit = useCallback(async () => {
-    if (!assessmentToTake?.assessment_id || submittedRef.current) return
+    if (!resolvedAssessmentId || submittedRef.current) return
     submittedRef.current = true
 
     setAssessmentErr('')
@@ -279,7 +322,7 @@ function TakeAssessmentPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${assessmentToTake.assessment_id}/submit`,
+        `${API_BASE}/api/assessments/${resolvedAssessmentId}/submit`,
         {
           method: 'POST',
           headers: {
@@ -297,6 +340,9 @@ function TakeAssessmentPage() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to submit assessment')
       }
+      if (studentId) {
+        clearDraft(resolvedAssessmentId, studentId)
+      }
       setShowSuccessModal(true)
     } catch (error) {
       submittedRef.current = false
@@ -305,17 +351,20 @@ function TakeAssessmentPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [answers, questionsList, assessmentToTake?.assessment_id, token])
+  }, [answers, questionsList, resolvedAssessmentId, studentId, token])
 
   useEffect(() => {
-    if (!assessmentToTake?.assessment_id || !token) return
+    if (!resolvedAssessmentId || !token) return
 
     let cancelled = false
 
     const fetchAssessment = async () => {
+      const draft =
+        studentId ? loadDraft(resolvedAssessmentId, studentId) : null
+
       try {
         const response = await fetch(
-          `${API_BASE}/api/assessments/${assessmentToTake.assessment_id}`,
+          `${API_BASE}/api/assessments/${resolvedAssessmentId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -337,8 +386,40 @@ function TakeAssessmentPage() {
         setTitle(data.assessment.title)
         setType(assessType)
         setDuration(assessDuration)
-        setTimeLeft(isTimed ? assessDuration * 60 : null)
+        setDueDate(data.assessment.due_date ?? null)
+        setDueTime(data.assessment.due_time ?? null)
         setIsTimeUp(false)
+        startedAtRef.current = null
+        durationSecondsRef.current = 0
+
+        if (isTimed) {
+          const totalSeconds = assessDuration * 60
+          durationSecondsRef.current = totalSeconds
+
+          if (draft?.startedAt != null) {
+            startedAtRef.current = draft.startedAt
+            if (Number(draft.durationSeconds) > 0) {
+              durationSecondsRef.current = draft.durationSeconds
+            }
+            const elapsed = (Date.now() - draft.startedAt) / 1000
+            if (durationSecondsRef.current - elapsed <= 0) {
+              setIsTimeUp(true)
+            }
+          } else {
+            startedAtRef.current = Date.now()
+          }
+        }
+
+        if (draft) {
+          setAnswers(draft.answers ?? {})
+          setCurrentQuestionIndex(draft.currentQuestionIndex ?? 0)
+          setCodeOutputs(draft.codeOutputs ?? {})
+        } else {
+          setAnswers({})
+          setCurrentQuestionIndex(0)
+          setCodeOutputs({})
+        }
+
         setQuestionsList(
           data.questions.map((question) => ({
             id: question.question_id,
@@ -370,46 +451,62 @@ function TakeAssessmentPage() {
         setQuestionStats(data.securitySettings.questionstats)
         setAssessmentErr('')
         setAssessmentLoaded(true)
+        setDraftResolved(true)
+        setTimerTick((tick) => tick + 1)
       } catch (error) {
         console.error('Failed to load assessment', error)
         if (!cancelled) {
           setAssessmentErr(error.message || 'Failed to load assessment')
           setAssessmentLoaded(false)
+          setDraftResolved(true)
         }
       }
     }
 
     submittedRef.current = false
     setAssessmentLoaded(false)
+    setDraftResolved(false)
+    setTimerTick(0)
     void fetchAssessment()
 
     return () => {
       cancelled = true
     }
-  }, [assessmentToTake, token])
+  }, [resolvedAssessmentId, studentId, token])
 
   useEffect(() => {
-    if (!assessmentLoaded || timeLeft === null || timeLeft <= 0) {
+    if (
+      !assessmentLoaded ||
+      !isTimedAssessment ||
+      startedAtRef.current == null ||
+      isTimeUp
+    ) {
       return undefined
     }
 
     const intervalId = setInterval(() => {
-      setTimeLeft((prev) => (prev <= 1 ? 0 : prev - 1))
+      const elapsed = (Date.now() - startedAtRef.current) / 1000
+      const remaining = durationSecondsRef.current - elapsed
+
+      setTimerTick((tick) => tick + 1)
+
+      if (remaining <= 0) {
+        setIsTimeUp(true)
+      }
     }, 1000)
 
     return () => clearInterval(intervalId)
-  }, [assessmentLoaded, assessmentToTake?.assessment_id])
+  }, [assessmentLoaded, isTimedAssessment, isTimeUp, resolvedAssessmentId])
 
   useEffect(() => {
-    if (!assessmentLoaded || !isTimedAssessment || timeLeft !== 0) {
+    if (!assessmentLoaded || !isTimedAssessment || !isTimeUp) {
       return undefined
     }
 
-    setIsTimeUp(true)
     void handleSubmit()
-  }, [assessmentLoaded, isTimedAssessment, timeLeft, handleSubmit])
+  }, [assessmentLoaded, isTimedAssessment, isTimeUp, handleSubmit])
 
-  if (!assessmentToTake) {
+  if (!resolvedAssessmentId) {
     return (
       <div className="take-assessment-page">
         <p className="take-assessment-error">
@@ -419,14 +516,12 @@ function TakeAssessmentPage() {
     )
   }
 
-  const timerIsLow = timeLeft !== null && timeLeft > 0 && timeLeft <= 300
-  const dueAt = buildDueDateTime(
-    assessmentToTake.due_date,
-    assessmentToTake.due_time
-  )
+  const timerIsLow =
+    remainingSeconds !== null && remainingSeconds > 0 && remainingSeconds <= 300
+  const dueAt = buildDueDateTime(dueDate, dueTime)
   const isPastDue = dueAt ? new Date() > dueAt : false
-  const dueDateLabel = formatDueDate(assessmentToTake.due_date)
-  const dueTimeLabel = formatDueTime(assessmentToTake.due_time)
+  const dueDateLabel = formatDueDate(dueDate)
+  const dueTimeLabel = formatDueTime(dueTime)
 
   const handleGoToListPage = () => {
     navigate(getAssessmentListPath(courseId, type))
@@ -442,7 +537,7 @@ function TakeAssessmentPage() {
         <span> / </span>
         <p className="take-assessment-title">{title || 'Loading...'}</p>
 
-        {isTimedAssessment && timeLeft !== null && (
+        {isTimedAssessment && remainingSeconds !== null && (
           <div
             className={`assessment-timer${
               isTimeUp ? ' assessment-timer--expired' : ''
@@ -452,7 +547,7 @@ function TakeAssessmentPage() {
           >
             <FontAwesomeIcon icon={faClock} className="assessment-timer-icon" />
             <span className="assessment-timer-value">
-              {isTimeUp ? '00:00' : formatCountdown(timeLeft)}
+              {isTimeUp ? '00:00' : formatCountdown(remainingSeconds)}
             </span>
           </div>
         )}

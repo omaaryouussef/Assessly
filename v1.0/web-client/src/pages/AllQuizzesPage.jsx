@@ -525,8 +525,10 @@ function AllQuizzesPage() {
               setQuizToDelete={setQuizToDelete}
               onRowClick = {
                 user?.role === 'STUDENT' ? () => {
-                  navigate(`/course/${courseId}/take-assessment` , {
-                    state: {assessmentToTake: quiz}})
+                  navigate(
+                    `/course/${courseId}/take-assessment/${quiz.assessment_id}`,
+                    { state: { assessmentToTake: quiz } }
+                  )
                 } : undefined
               }
             />

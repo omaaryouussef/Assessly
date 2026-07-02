@@ -92,7 +92,7 @@ const router = createBrowserRouter(
           {/* Student related routes */}
           <Route element={<RoleGuard allowedRoles={['STUDENT']} />}>
             <Route
-              path="course/:courseId/take-assessment"
+              path="course/:courseId/take-assessment/:assessmentId"
               element={<TakeAssessmentPage />}
             />
             <Route
