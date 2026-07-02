@@ -35,12 +35,9 @@ function CourseHomePage() {
     setErrorMessage('')
 
     try {
-      const response = await fetch(
-        `${API_BASE}/api/courses/home/${courseId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      )
+      const response = await fetch(`${API_BASE}/api/courses/home/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       const data = await response.json()
       if (!response.ok) {
         throw new Error(data.error || 'Failed to load course home')
@@ -59,7 +56,8 @@ function CourseHomePage() {
     fetchCourseHome()
   }, [fetchCourseHome])
 
-  const pageTitle = homeData?.course_title ?? courseData?.coursetitle ?? 'Course'
+  const pageTitle =
+    homeData?.course_title ?? courseData?.coursetitle ?? 'Course'
 
   return (
     <div className="course-home-page-container">
@@ -80,11 +78,6 @@ function CourseHomePage() {
         </p>
       ) : (
         <>
-          <div className="course-home-hero">
-            <h1 className="course-home-title">{pageTitle}</h1>
-            <p className="course-home-subtitle">Course overview</p>
-          </div>
-
           <div className="course-home-grid">
             <section className="course-home-card">
               <div className="course-home-card-header">
@@ -113,26 +106,6 @@ function CourseHomePage() {
               </p>
             </section>
 
-            <section className="course-home-card">
-              <div className="course-home-card-header">
-                <FontAwesomeIcon icon={faDoorOpen} />
-                <h2>Classroom</h2>
-              </div>
-              <p className="course-home-highlight">
-                {formatValue(homeData?.classroom)}
-              </p>
-            </section>
-
-            <section className="course-home-card">
-              <div className="course-home-card-header">
-                <FontAwesomeIcon icon={faClock} />
-                <h2>Meeting Time</h2>
-              </div>
-              <p className="course-home-highlight">
-                {formatValue(homeData?.meeting_time)}
-              </p>
-            </section>
-
             <section className="course-home-card course-home-card--wide">
               <div className="course-home-card-header">
                 <FontAwesomeIcon icon={faUserGroup} />
@@ -148,7 +121,9 @@ function CourseHomePage() {
                   ))}
                 </ul>
               ) : (
-                <p className="course-home-empty">No teaching assistants assigned</p>
+                <p className="course-home-empty">
+                  No teaching assistants assigned
+                </p>
               )}
             </section>
           </div>

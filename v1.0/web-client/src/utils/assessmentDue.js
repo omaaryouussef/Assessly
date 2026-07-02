@@ -78,27 +78,18 @@ export function formatSubmissionTime(date = new Date()) {
   return `${hours}:${minutes}:${seconds}`
 }
 
-
-
 export function getAssessmentStatus(assessment, currentDateTime = new Date()) {
-  const dueAt = buildDueDateTime(
-    assessment.due_date,
-    assessment.due_time
-  );
+  const dueAt = buildDueDateTime(assessment.due_date, assessment.due_time)
 
   const submittedAt = assessment.has_submitted
-    ? buildDueDateTime(
-        assessment.date_submitted,
-        assessment.time_submitted
-      )
-    : null;
+    ? buildDueDateTime(assessment.date_submitted, assessment.time_submitted)
+    : null
 
   if (assessment.has_submitted) {
-        return submittedAt > dueAt ? "late" : "submitted";
+    return submittedAt > dueAt ? 'late' : 'submitted'
+  } else if (assessment.is_closed) {
+    return 'missing'
   }
 
-
-  return dueAt && currentDateTime > dueAt
-    ? "missing"
-    : "available";
+  return dueAt && currentDateTime > dueAt ? 'missing' : 'available'
 }
