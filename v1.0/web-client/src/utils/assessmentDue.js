@@ -79,6 +79,76 @@ export function formatSubmissionTime(date = new Date()) {
   return `${hours}:${minutes}:${seconds}`
 }
 
+export function buildSubmissionDateTime(submittedDate, submittedTime) {
+  if (!submittedDate) return null
+
+  const datePart = parseDueDateForInput(submittedDate)
+  let timePart = '00:00:00'
+
+  if (submittedTime) {
+    const raw = String(submittedTime)
+    if (raw.length >= 8) {
+      timePart = raw.slice(0, 8)
+    } else if (raw.length >= 5) {
+      timePart = `${raw.slice(0, 5)}:00`
+    }
+  }
+
+  const submittedAt = new Date(`${datePart}T${timePart}`)
+  return Number.isNaN(submittedAt.getTime()) ? null : submittedAt
+}
+
+export function getSubmissionLateness(
+  dueDate,
+  dueTime,
+  submittedDate,
+  submittedTime
+) {
+  const dueAt = buildDueDateTime(dueDate, dueTime)
+  const submittedAt = buildSubmissionDateTime(submittedDate, submittedTime)
+
+  if (!dueAt || !submittedAt || submittedAt <= dueAt) return null
+
+  const diffMs = submittedAt.getTime() - dueAt.getTime()
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+
+  return { days, hours, totalHours }
+}
+
+export function formatSubmissionLateness(
+  dueDate,
+  dueTime,
+  submittedDate,
+  submittedTime
+) {
+  const lateness = getSubmissionLateness(
+    dueDate,
+    dueTime,
+    submittedDate,
+    submittedTime
+  )
+  if (!lateness) return null
+
+  if (lateness.totalHours < 1) {
+    return 'Less than 1 hour late'
+  }
+
+  const dayPart =
+    lateness.days === 1 ? '1 day' : `${lateness.days} days`
+  const hourPart =
+    lateness.hours === 1 ? '1 hour' : `${lateness.hours} hours`
+
+  if (lateness.days > 0 && lateness.hours > 0) {
+    return `${dayPart}, ${hourPart}`
+  }
+  if (lateness.days > 0) {
+    return `${dayPart} `
+  }
+  return `${hourPart}`
+}
+
 export function getAssessmentStatus(assessment, currentDateTime = new Date()) {
   const dueAt = buildDueDateTime(assessment.due_date, assessment.due_time)
   const submittedAt = assessment.has_submitted

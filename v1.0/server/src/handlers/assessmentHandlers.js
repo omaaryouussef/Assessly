@@ -1118,7 +1118,6 @@ export const saveStudentGrades = async (req, res) => {
 
 export const getStudentAnswers = async (req, res) => {
   const { assessmentId, studentId } = req.params;
-  const { user_id: userId, role } = req.user;
   const answers = {};
   try {
     const answersByQuestion = await db.query(
@@ -1134,7 +1133,28 @@ export const getStudentAnswers = async (req, res) => {
         grade: answer.grade,
       };
     }
-    return res.status(200).json(answers);
+
+    const submissionResult = await db.query(
+      `SELECT sa.grade, sa.percent,
+              TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted,
+              sa.time_submitted,
+              (sa.date_submitted IS NOT NULL) AS has_submitted,
+              (sa.grade IS NOT NULL) AS graded
+       FROM student_assessment sa
+       WHERE sa.student_id = $1 AND sa.assessment_id = $2`,
+      [studentId, assessmentId],
+    );
+
+    const submission = submissionResult.rows[0] ?? {
+      has_submitted: false,
+      graded: false,
+      date_submitted: null,
+      time_submitted: null,
+      grade: null,
+      percent: null,
+    };
+
+    return res.status(200).json({ answers, submission });
   } catch (error) {
     console.log("Error: ", error);
     return res.status(500).json({ error: "Failed to get student answers" });

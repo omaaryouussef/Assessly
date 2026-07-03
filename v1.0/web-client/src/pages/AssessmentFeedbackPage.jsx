@@ -8,6 +8,12 @@ import {
   faPencil,
   faCheck,
 } from '@fortawesome/free-solid-svg-icons'
+import {
+  formatDueDate,
+  formatDueTime,
+  formatSubmissionLateness,
+  getAssessmentStatus,
+} from '../utils/assessmentDue'
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
@@ -40,6 +46,21 @@ function normalizeGradeValue(value) {
   if (value === '' || value === null || value === undefined) return null
   const numeric = Number(value)
   return Number.isNaN(numeric) ? null : numeric
+}
+
+function formatDateTimeLabel(date, time) {
+  const dateLabel = formatDueDate(date)
+  if (!dateLabel) return ''
+  const timeLabel = formatDueTime(time)
+  return timeLabel ? `${dateLabel} ${timeLabel}` : dateLabel
+}
+
+function getStatusLabel(status) {
+  if (status === 'submitted') return 'Submitted'
+  if (status === 'missing') return 'Missing'
+  if (status === 'available') return 'Available'
+  if (status === 'graded') return 'Graded'
+  return 'Late'
 }
 
 function normalizeFeedbackEntry(raw) {
@@ -502,12 +523,31 @@ function AssessmentFeedbackPage() {
   const { courseId, assessmentId, studentId } = useParams()
   const { assessmentToGrade, studentName: studentNameFromState } =
     useLocation().state ?? {}
+  const { assessmentToView } = useLocation().state ?? {}
   const { user, token } = useAuth()
 
   const [title, setTitle] = useState(assessmentToGrade?.title ?? '')
   const [assessmentMaxGrade, setAssessmentMaxGrade] = useState(
     Number(assessmentToGrade?.max_grade) || 0
   )
+  const [dueDate, setDueDate] = useState(
+    assessmentToGrade?.due_date ?? assessmentToView?.due_date ?? ''
+  )
+  const [dueTime, setDueTime] = useState(
+    assessmentToGrade?.due_time ?? assessmentToView?.due_time ?? ''
+  )
+  const [isClosed, setIsClosed] = useState(
+    assessmentToGrade?.is_closed ?? assessmentToView?.is_closed ?? false
+  )
+  const [submissionMeta, setSubmissionMeta] = useState({
+    has_submitted:
+      assessmentToGrade?.has_submitted ?? assessmentToView?.has_submitted ?? false,
+    graded: assessmentToGrade?.graded ?? assessmentToView?.graded ?? false,
+    date_submitted:
+      assessmentToGrade?.date_submitted ?? assessmentToView?.date_submitted ?? null,
+    time_submitted:
+      assessmentToGrade?.time_submitted ?? assessmentToView?.time_submitted ?? null,
+  })
   const [questionsList, setQuestionsList] = useState([])
   const [answers, setAnswers] = useState({})
   const [questionGrades, setQuestionGrades] = useState({})
@@ -556,7 +596,14 @@ function AssessmentFeedbackPage() {
           throw new Error(assessmentData.error || 'Failed to load assessment')
         }
 
-        const answersData = answersRes.ok ? await answersRes.json() : {}
+        const answersPayload = answersRes.ok ? await answersRes.json() : {}
+        const answersData = answersPayload.answers ?? answersPayload
+        const submission = answersPayload.submission ?? {
+          has_submitted: false,
+          graded: false,
+          date_submitted: null,
+          time_submitted: null,
+        }
         const feedbackData = feedbackRes.ok ? await feedbackRes.json() : {}
 
         if (!feedbackRes.ok) {
@@ -568,7 +615,15 @@ function AssessmentFeedbackPage() {
 
         setTitle(assessmentData.assessment.title)
         setAssessmentMaxGrade(Number(assessmentData.assessment.max_grade) || 0)
-
+        setDueDate(assessmentData.assessment.due_date)
+        setDueTime(assessmentData.assessment.due_time)
+        setIsClosed(Boolean(assessmentData.assessment.is_closed))
+        setSubmissionMeta({
+          has_submitted: Boolean(submission.has_submitted),
+          graded: Boolean(submission.graded),
+          date_submitted: submission.date_submitted ?? null,
+          time_submitted: submission.time_submitted ?? null,
+        })
         const mappedQuestions = assessmentData.questions.map((question) => ({
           id: question.question_id,
           qType: question.question_type,
@@ -617,6 +672,38 @@ function AssessmentFeedbackPage() {
       cancelled = true
     }
   }, [assessmentId, studentId, token, user, isStudentViewer])
+
+  const assessmentStatus = useMemo(
+    () =>
+      getAssessmentStatus({
+        due_date: dueDate,
+        due_time: dueTime,
+        has_submitted: submissionMeta.has_submitted,
+        date_submitted: submissionMeta.date_submitted,
+        time_submitted: submissionMeta.time_submitted,
+        graded: submissionMeta.graded,
+        is_closed: isClosed,
+      }),
+    [dueDate, dueTime, submissionMeta, isClosed]
+  )
+
+  const dueDateLabel = formatDateTimeLabel(dueDate, dueTime) || '—'
+  const submittedDateLabel = submissionMeta.has_submitted
+    ? formatDateTimeLabel(
+        submissionMeta.date_submitted,
+        submissionMeta.time_submitted
+      ) || '—'
+    : 'Not submitted'
+
+  const latenessLabel = useMemo(() => {
+    if (!submissionMeta.has_submitted) return null
+    return formatSubmissionLateness(
+      dueDate,
+      dueTime,
+      submissionMeta.date_submitted,
+      submissionMeta.time_submitted
+    )
+  }, [dueDate, dueTime, submissionMeta])
 
   const totalGrade = useMemo(() => {
     return questionsList.reduce((sum, question) => {
@@ -883,6 +970,40 @@ function AssessmentFeedbackPage() {
                 <p className="assessment-feedback-student-name">
                   {displayStudentName}
                 </p>
+                <dl className="assessment-feedback-meta">
+                  <div className="assessment-feedback-meta-item">
+                    <dt className="assessment-feedback-meta-label">Due</dt>
+                    <dd className="assessment-feedback-meta-value">
+                      {dueDateLabel}
+                    </dd>
+                  </div>
+                  <div className="assessment-feedback-meta-item">
+                    <dt className="assessment-feedback-meta-label">Submitted</dt>
+                    <dd className="assessment-feedback-meta-value">
+                      {submittedDateLabel}
+                    </dd>
+                  </div>
+                  <div className="assessment-feedback-meta-item">
+                    <dt className="assessment-feedback-meta-label">Status</dt>
+                    <dd className="assessment-feedback-meta-value">
+                      <span
+                        className={`assignment-status-badge assignment-status-badge--${assessmentStatus}`}
+                      >
+                        {getStatusLabel(assessmentStatus)}
+                      </span>
+                    </dd>
+                  </div>
+                  {latenessLabel && (
+                    <div className="assessment-feedback-meta-item">
+                      <dt className="assessment-feedback-meta-label">
+                        Submitted late by
+                      </dt>
+                      <dd className="assessment-feedback-meta-value assessment-feedback-meta-value--late">
+                        {latenessLabel}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
               </div>
               <div className="assessment-feedback-total-card">
                 <span className="assessment-feedback-total-label">

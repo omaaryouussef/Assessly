@@ -17,7 +17,11 @@ function AssessmentRow({ assessment, user }) {
   const openFeedback = () => {
     if (!canViewFeedback) return
     navigate(
-      `/course/${courseId}/feedback/${assessment.assessment_id}/${user?.user_id}`
+      `/course/${courseId}/feedback/${assessment.assessment_id}/${user?.user_id}`, {
+        state: {
+          assessmentToView: assessment,
+        },
+      }
     )
   }
 
