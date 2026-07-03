@@ -794,7 +794,7 @@ export const submitAssessment = async (req, res) => {
     // Verify assessment exists
     const assessment = await db.query(
       "SELECT assessment_id FROM assessment WHERE assessment_id = $1",
-      [assessmentId]
+      [assessmentId],
     );
 
     if (assessment.rows.length === 0) {
@@ -805,7 +805,7 @@ export const submitAssessment = async (req, res) => {
     // Get all questions
     const questions = await db.query(
       "SELECT question_id FROM question WHERE assessment_id = $1",
-      [assessmentId]
+      [assessmentId],
     );
 
     if (questions.rows.length === 0) {
@@ -819,7 +819,7 @@ export const submitAssessment = async (req, res) => {
        FROM student_assessment
        WHERE student_id = $1
          AND assessment_id = $2`,
-      [userId, assessmentId]
+      [userId, assessmentId],
     );
 
     let message;
@@ -831,7 +831,7 @@ export const submitAssessment = async (req, res) => {
              time_submitted = $2
          WHERE student_id = $3
            AND assessment_id = $4`,
-        [todayDate, todayTime, userId, assessmentId]
+        [todayDate, todayTime, userId, assessmentId],
       );
 
       message = "Assessment Updated Successfully";
@@ -841,7 +841,7 @@ export const submitAssessment = async (req, res) => {
           (grade, percent, student_id, assessment_id, date_submitted, time_submitted)
          VALUES
           (NULL, NULL, $1, $2, $3, $4)`,
-        [userId, assessmentId, todayDate, todayTime]
+        [userId, assessmentId, todayDate, todayTime],
       );
 
       message = "Assessment Submitted Successfully";
@@ -856,16 +856,14 @@ export const submitAssessment = async (req, res) => {
         answersByQuestion[String(questionId)]?.answer;
 
       const answer =
-        rawAnswer === undefined || rawAnswer === null
-          ? ""
-          : String(rawAnswer);
+        rawAnswer === undefined || rawAnswer === null ? "" : String(rawAnswer);
 
       await db.query(
         `
         INSERT INTO student_question_answer
           (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
         VALUES
-          (0, $1, 0, 0, $2, $3)
+          (NULL, $1, NULL, NULL, $2, $3)
         ON CONFLICT (student_id, question_id)
         DO UPDATE SET
           answer = EXCLUDED.answer,
@@ -873,7 +871,7 @@ export const submitAssessment = async (req, res) => {
           active_time_sec = EXCLUDED.active_time_sec,
           stale_time_sec = EXCLUDED.stale_time_sec
         `,
-        [answer, userId, questionId]
+        [answer, userId, questionId],
       );
     }
 
@@ -961,7 +959,8 @@ export const getAllAssessments = async (req, res) => {
   try {
     const assessments = await db.query(
       `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time, a.is_published, a.is_closed,
-        (sa.date_submitted IS NOT NULL) AS has_submitted, sa.grade, sa.percent, TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa.time_submitted
+        (sa.date_submitted IS NOT NULL) AS has_submitted, sa.grade, sa.percent, TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa.time_submitted,
+        (sa.grade IS NOT NULL) AS graded
       FROM assessment a LEFT JOIN student_assessment sa
       ON a.assessment_id = sa.assessment_id
       AND sa.student_id = $1
@@ -990,7 +989,8 @@ export const getAllAssessmentsForAllStudents = async (req, res) => {
     for (const student of students.rows) {
       const assessments = await db.query(
         `SELECT a.assessment_id, a.title, a.assess_type, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time, a.is_published, a.is_closed,
-          (sa.date_submitted IS NOT NULL) AS has_submitted, sa.grade, TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa.time_submitted
+          (sa.date_submitted IS NOT NULL) AS has_submitted, sa.grade, TO_CHAR(sa.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa.time_submitted,
+          (sa.grade IS NOT NULL) AS graded
         FROM assessment a LEFT JOIN student_assessment sa
         ON a.assessment_id = sa.assessment_id
         AND sa.student_id = $1
@@ -1116,7 +1116,6 @@ export const saveStudentGrades = async (req, res) => {
   }
 };
 
-
 export const getStudentAnswers = async (req, res) => {
   const { assessmentId, studentId } = req.params;
   const { user_id: userId, role } = req.user;
@@ -1130,7 +1129,10 @@ export const getStudentAnswers = async (req, res) => {
       [assessmentId, studentId],
     );
     for (const answer of answersByQuestion.rows) {
-      answers[answer.question_id] = {answer: answer.answer, grade: answer.grade};
+      answers[answer.question_id] = {
+        answer: answer.answer,
+        grade: answer.grade,
+      };
     }
     return res.status(200).json(answers);
   } catch (error) {
@@ -1139,13 +1141,14 @@ export const getStudentAnswers = async (req, res) => {
   }
 };
 
-
 export const getQuestionsFeedback = async (req, res) => {
   const { assessmentId, studentId } = req.params;
   const { user_id: userId, role } = req.user;
 
   try {
-    if (!(await canAccessStudentFeedback(assessmentId, studentId, userId, role))) {
+    if (
+      !(await canAccessStudentFeedback(assessmentId, studentId, userId, role))
+    ) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -1220,7 +1223,9 @@ export const saveQuestionGradesForStudent = async (req, res) => {
   }
 
   try {
-    if (!(await canAccessStudentFeedback(assessmentId, studentId, userId, role))) {
+    if (
+      !(await canAccessStudentFeedback(assessmentId, studentId, userId, role))
+    ) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -1244,7 +1249,12 @@ export const saveQuestionGradesForStudent = async (req, res) => {
       const questionId = Number(entry.questionId);
       const grade = entry.grade;
 
-      if (!questionId || grade === "" || grade === null || grade === undefined) {
+      if (
+        !questionId ||
+        grade === "" ||
+        grade === null ||
+        grade === undefined
+      ) {
         continue;
       }
 
@@ -1262,7 +1272,9 @@ export const saveQuestionGradesForStudent = async (req, res) => {
       );
       if (questionResult.rows.length === 0) {
         await db.query("ROLLBACK");
-        return res.status(400).json({ error: "Invalid question for assessment" });
+        return res
+          .status(400)
+          .json({ error: "Invalid question for assessment" });
       }
 
       const questionMaxGrade = Number(questionResult.rows[0].max_grade);
@@ -1355,7 +1367,9 @@ export const upsertQuestionFeedback = async (req, res) => {
   }
 
   try {
-    if (!(await canAccessStudentFeedback(assessmentId, studentId, userId, role))) {
+    if (
+      !(await canAccessStudentFeedback(assessmentId, studentId, userId, role))
+    ) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -1441,23 +1455,28 @@ export const resolveQuestionFeedback = async (req, res) => {
       return res.status(200).json({ message: "Feedback already resolved" });
     }
 
-    if (!(await canAccessStudentFeedback(
-      row.assessment_id,
-      row.student_id,
-      userId,
-      role,
-    ))) {
+    if (
+      !(await canAccessStudentFeedback(
+        row.assessment_id,
+        row.student_id,
+        userId,
+        role,
+      ))
+    ) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
     if (Number(row.user_id) === Number(userId)) {
-      return res.status(400).json({ error: "You cannot resolve your own comment" });
+      return res
+        .status(400)
+        .json({ error: "You cannot resolve your own comment" });
     }
 
     const authorRole = row.author_role;
     const canResolve =
       (isGraderRole(role) && authorRole === "STUDENT") ||
-      (role === "STUDENT" && (authorRole === "INSTRUCTOR" || authorRole === "TA"));
+      (role === "STUDENT" &&
+        (authorRole === "INSTRUCTOR" || authorRole === "TA"));
 
     if (!canResolve) {
       return res.status(403).json({ error: "Forbidden" });
@@ -1471,6 +1490,8 @@ export const resolveQuestionFeedback = async (req, res) => {
     return res.status(200).json({ message: "Feedback resolved successfully" });
   } catch (error) {
     console.log("Error: ", error);
-    return res.status(500).json({ error: "Failed to resolve question feedback" });
+    return res
+      .status(500)
+      .json({ error: "Failed to resolve question feedback" });
   }
 };

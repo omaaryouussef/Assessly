@@ -12,7 +12,7 @@ function AssessmentRow({ assessment, user }) {
   const status = getAssessmentStatus(assessment)
   const { courseId } = useParams()
   const navigate = useNavigate()
-  const canViewFeedback = status === 'submitted' || status === 'late'
+  const canViewFeedback = status === 'graded' || status === 'late'
 
   const openFeedback = () => {
     if (!canViewFeedback) return
@@ -58,7 +58,9 @@ function AssessmentRow({ assessment, user }) {
                 ? 'grades-status-badge--missing'
                 : status === 'available'
                   ? 'grades-status-badge--available'
-                  : 'grades-status-badge--late'
+                  : status === 'graded'
+                    ? 'grades-status-badge--graded'
+                    : 'grades-status-badge--late'
           }`}
         >
           {status === 'submitted'
@@ -67,7 +69,9 @@ function AssessmentRow({ assessment, user }) {
               ? 'Missing'
               : status === 'available'
                 ? 'Available'
-                : 'Late'}
+                : status === 'graded'
+                  ? 'Graded'
+                  : 'Late'}
         </span>
       </td>
     </tr>

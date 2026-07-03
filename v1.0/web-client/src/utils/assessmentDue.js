@@ -86,6 +86,10 @@ export function getAssessmentStatus(assessment, currentDateTime = new Date()) {
     ? buildDueDateTime(assessment.date_submitted, assessment.time_submitted)
     : null
 
+  if (assessment.graded) {
+    return 'graded'
+  }
+
   if (assessment.has_submitted) {
     return submittedAt > dueAt ? 'late' : 'submitted'
   } else if (assessment.is_closed) {
