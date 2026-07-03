@@ -8,6 +8,18 @@ import { getAssessmentStatus } from '../../utils/assessmentDue'
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
+function usesInlineGrading(assessment) {
+  if (assessment.has_submitted) return false
+  const status = getAssessmentStatus(assessment)
+  return status === 'missing' || status === 'graded'
+}
+
+function opensFeedbackPage(assessment) {
+  if (!assessment.has_submitted) return false
+  const status = getAssessmentStatus(assessment)
+  return status === 'submitted' || status === 'late' || status === 'graded'
+}
+
 function StatusWord({ assessment }) {
   const status = getAssessmentStatus(assessment)
   const label =
@@ -17,10 +29,14 @@ function StatusWord({ assessment }) {
         ? 'Missing'
         : status === 'available'
           ? 'Available'
-          : 'Late'
+          : status === 'graded'
+            ? 'Graded'
+            : 'Late'
 
   return (
-    <span className={`instructor-grades-status-word instructor-grades-status-word--${status}`}>
+    <span
+      className={`instructor-grades-status-word instructor-grades-status-word--${status}`}
+    >
       {label}
     </span>
   )
@@ -35,37 +51,59 @@ function AssessmentGradeCell({
   onGradeChange,
   onOpenAssessment,
 }) {
-  const status = getAssessmentStatus(assessment)
-  const showLink = status === 'submitted' || status === 'late'
-  const canEditGrade =
-    status === 'submitted' || status === 'late' || status === 'missing'
+  const opensFeedback = opensFeedbackPage(assessment)
+  const canEditInline = usesInlineGrading(assessment)
+  const gradeLabel =
+    assessment.grade != null
+      ? `${assessment.grade}/${assessment.max_grade}`
+      : '—'
+
+  const openFeedback = () => {
+    onOpenAssessment(assessment, studentId, studentName)
+  }
 
   return (
     <div className="instructor-grades-assessment-cell-inner">
       <StatusWord assessment={assessment} />
-      {showLink && (
+      {opensFeedback ? (
         <button
           type="button"
           className="instructor-grades-assessment-link"
-          onClick={() => onOpenAssessment(assessment, studentId, studentName)}
+          onClick={openFeedback}
         >
           {assessment.title}
         </button>
+      ) : (
+        <span className="instructor-grades-assessment-title-static">
+          Missing
+        </span>
       )}
-      <input
-        type="number"
-        className={`instructor-grades-input${isDirty ? ' instructor-grades-input--dirty' : ''}`}
-        min={0}
-        max={assessment.max_grade}
-        step="0.1"
-        placeholder={`/ ${assessment.max_grade}`}
-        value={gradeValue}
-        onChange={(e) =>
-          onGradeChange(studentId, assessment.assessment_id, e.target.value)
-        }
-        disabled={!canEditGrade}
-        aria-label={`Grade for ${studentName} on ${assessment.title}`}
-      />
+      {canEditInline ? (
+        <input
+          type="number"
+          className={`instructor-grades-input${isDirty ? ' instructor-grades-input--dirty' : ''}`}
+          min={0}
+          max={assessment.max_grade}
+          step="0.1"
+          placeholder={`/ ${assessment.max_grade}`}
+          value={gradeValue}
+          onChange={(e) =>
+            onGradeChange(studentId, assessment.assessment_id, e.target.value)
+          }
+          aria-label={`Grade for ${studentName} on ${assessment.title}`}
+        />
+      ) : opensFeedback ? (
+        <button
+          type="button"
+          className="instructor-grades-grade-link"
+          onClick={openFeedback}
+          aria-label={`Grade ${studentName} on ${assessment.title}`}
+        >
+          {gradeLabel}
+        </button>
+      ) : (
+        <span className="instructor-grades-grade-static">{gradeLabel}</span>
+      )}
     </div>
   )
 }
@@ -84,10 +122,7 @@ function buildSavedGradesMap(rows) {
   const map = {}
   for (const row of rows) {
     for (const assessment of row.assessments ?? []) {
-      const status = getAssessmentStatus(assessment)
-      const canEditGrade =
-        status === 'submitted' || status === 'late' || status === 'missing'
-      if (!canEditGrade) continue
+      if (!usesInlineGrading(assessment)) continue
       const key = gradeKey(row.student_id, assessment.assessment_id)
       map[key] =
         assessment.grade === null || assessment.grade === undefined
@@ -194,6 +229,8 @@ function ViewAllStudentsGradePage() {
     const entries = []
     for (const row of assessmentsForAllStudents) {
       for (const assessment of row.assessments ?? []) {
+        if (!usesInlineGrading(assessment)) continue
+
         const studentId = row.student_id
         const assessmentId = assessment.assessment_id
         if (!isCellDirty(studentId, assessmentId)) continue
@@ -260,7 +297,17 @@ function ViewAllStudentsGradePage() {
                 item.assessmentId === assessment.assessment_id
             )
             if (!entry) return assessment
-            return { ...assessment, grade: Number(entry.grade) }
+            const numericGrade = Number(entry.grade)
+            const percent =
+              assessment.max_grade > 0
+                ? (numericGrade / assessment.max_grade) * 100
+                : 0
+            return {
+              ...assessment,
+              grade: numericGrade,
+              percent,
+              graded: true,
+            }
           }),
         }))
       )
@@ -277,13 +324,7 @@ function ViewAllStudentsGradePage() {
     } finally {
       setIsSaving(false)
     }
-  }, [
-    blocker,
-    courseId,
-    getDirtyEntries,
-    savedGrades,
-    token,
-  ])
+  }, [blocker, courseId, getDirtyEntries, savedGrades, token])
 
   const handleGradeChange = (studentId, assessmentId, value) => {
     setGradeDrafts((prev) => ({

@@ -175,7 +175,7 @@ async function getTimedAssessmentsByCourseId(req, res, assessType) {
     if (role === "STUDENT") {
       const result = await db.query(
         `SELECT a.assessment_id, a.title, a.max_grade, a.duration, TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date, a.due_time,
-                a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY},
+                a.is_published, a.is_closed, ${QUESTION_TYPE_SUBQUERY}, TO_CHAR(sa_sub.date_submitted, 'YYYY-MM-DD') AS date_submitted, sa_sub.time_submitted,
                 (sa_sub.date_submitted IS NOT NULL) AS has_submitted
          FROM assessment a
          INNER JOIN student_access_assessments saa ON saa.assessment_id = a.assessment_id
@@ -189,7 +189,7 @@ async function getTimedAssessmentsByCourseId(req, res, assessType) {
            AND a.is_published = true`,
         [courseId, userId, assessType],
       );
-      return res.status(200).json(result.rows.map(mapQuiz));
+      return res.status(200).json(result.rows);
     }
 
     const result = await db.query(

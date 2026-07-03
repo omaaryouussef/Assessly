@@ -12,7 +12,7 @@ function AssessmentRow({ assessment, user }) {
   const status = getAssessmentStatus(assessment)
   const { courseId } = useParams()
   const navigate = useNavigate()
-  const canViewFeedback = status === 'graded' || status === 'late'
+  const canViewFeedback = status === 'graded'
 
   const openFeedback = () => {
     if (!canViewFeedback) return
@@ -30,14 +30,18 @@ function AssessmentRow({ assessment, user }) {
             className="grades-feedback-link"
             onClick={openFeedback}
           >
-            <span className="grades-feedback-link-label">{assessment.title}</span>
+            <span className="grades-feedback-link-label">
+              {assessment.title}
+            </span>
             <span className="grades-feedback-link-hint">
               <FontAwesomeIcon icon={faCommentDots} />
               View feedback
             </span>
           </button>
         ) : (
-          <span className="grades-assessment-title-static">{assessment.title}</span>
+          <span className="grades-assessment-title-static">
+            {assessment.title}
+          </span>
         )}
       </td>
 

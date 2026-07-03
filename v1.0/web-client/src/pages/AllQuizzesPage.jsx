@@ -14,7 +14,8 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
-import { formatDueDateTimeLabel } from '../utils/assessmentDue'
+import { formatDueDateTimeLabel, getAssessmentStatus } from '../utils/assessmentDue'
+
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
@@ -42,8 +43,9 @@ function QuizRow({
 }) {
   const icon = QUIZ_ICONS[quiz.question_type] ?? faFile
   const isPublished = quiz.is_published;
+  const status = getAssessmentStatus(quiz)
   return (
-    <div className="assignment-row" onClick={quiz.is_published && !quiz.is_closed && !quiz.has_submitted ? onRowClick : undefined}>
+    <div className="assignment-row" onClick={quiz.is_published && !quiz.is_closed && status === 'available' ? onRowClick : undefined}>
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>
@@ -118,7 +120,6 @@ function QuizRow({
               onClick={() => onPublishClick(quiz)}
               disabled={isPublishing || isClosing}
             >
-              {/* I will come back here to let the instructor publish the quiz to late sutdents */}
               {isPublishing
                 ? 'Saving...'
                 : quiz.is_published
@@ -161,19 +162,27 @@ function QuizRow({
           </>
         ) : (
           <>
-            {quiz.has_submitted ? (
+            {status === 'submitted' ? (
               <span className="assignment-status-badge assignment-status-badge--submitted">
                 Submitted
               </span>
-            ) : quiz.is_closed ? (
+            ) : status === 'missing' ? (
               <span className="assignment-status-badge assignment-status-badge--missing">
                 Missing
               </span>
-            ) : (
+            ) : status === 'available' ? (
               <span className="assignment-status-badge assignment-status-badge--available">
                 Available
               </span>
-            )}
+            ) : status === 'graded' ? (
+              <span className="assignment-status-badge assignment-status-badge--graded">
+                Graded
+              </span>
+            ) : (
+                <span className="assignment-status-badge assignment-status-badge--late">
+                  Late
+                </span>
+              )}
           </>
         )}
       </div>

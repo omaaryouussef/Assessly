@@ -14,7 +14,7 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
-import { formatDueDateTimeLabel } from '../utils/assessmentDue'
+import { formatDueDateTimeLabel, getAssessmentStatus } from '../utils/assessmentDue'
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
@@ -42,9 +42,9 @@ function ExamRow({
 }) {
   const icon = EXAM_ICONS[exam.question_type] ?? faFile
   const isPublished = exam.is_published;
-
+  const status = getAssessmentStatus(exam)
   return (
-    <div className="assignment-row" onClick={exam.is_published && !exam.is_closed && !exam.has_submitted? onRowClick : undefined}>
+    <div className="assignment-row" onClick={exam.is_published && !exam.is_closed && status === 'available' ? onRowClick : undefined}>
       <div className="assignment-row-icon" aria-hidden="true">
         <FontAwesomeIcon icon={icon} />
       </div>
@@ -161,17 +161,25 @@ function ExamRow({
           </>
         ) : (
           <>
-            {exam.has_submitted ? (
+            {status === 'submitted' ? (
               <span className="assignment-status-badge assignment-status-badge--submitted">
                 Submitted
               </span>
-            ) : exam.is_closed ? (
+            ) : status === 'missing' ? (
               <span className="assignment-status-badge assignment-status-badge--missing">
                 Missing
               </span>
-            ) : (
+            ) : status === 'available' ? (
               <span className="assignment-status-badge assignment-status-badge--available">
                 Available
+              </span>
+            ) : status === 'graded' ? (
+              <span className="assignment-status-badge assignment-status-badge--graded">
+                Graded
+              </span>
+            ) : (
+              <span className="assignment-status-badge assignment-status-badge--late">
+                Late
               </span>
             )}
           </>

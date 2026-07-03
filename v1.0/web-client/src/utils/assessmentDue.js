@@ -81,7 +81,6 @@ export function formatSubmissionTime(date = new Date()) {
 
 export function getAssessmentStatus(assessment, currentDateTime = new Date()) {
   const dueAt = buildDueDateTime(assessment.due_date, assessment.due_time)
-
   const submittedAt = assessment.has_submitted
     ? buildDueDateTime(assessment.date_submitted, assessment.time_submitted)
     : null
