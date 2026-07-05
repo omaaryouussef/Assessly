@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import Editor from '@monaco-editor/react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -58,7 +57,6 @@ function QuestionRow({
   handleRunCode,
   codeOutput,
   isRunningCode,
-  codeSnippet,
 }) {
   return (
     <div
@@ -72,15 +70,22 @@ function QuestionRow({
       <div className="question-row-body">
         <p className="question-row-prompt">{question.qPrompt}</p>
         {question.codeSnippet && (
-          <div className="question-row-code-snippet">
-            <strong>Code snippet:</strong>
-            <Editor
-              height="200px"
-              theme="vs-dark"
-              defaultLanguage={question.progLang}
-              value={question.codeSnippet}
-              readOnly={true}
-            />
+          <div className="take-assessment-code-snippet">
+            <div className="take-assessment-code-snippet-header">
+              <span className="take-assessment-code-snippet-label">
+                Provided code
+              </span>
+              {question.progLang && (
+                <span className="take-assessment-code-snippet-lang">
+                  {question.progLang}
+                </span>
+              )}
+            </div>
+            <div className="take-assessment-code-snippet-panel">
+              <pre className="take-assessment-code-snippet-preview">
+                <code>{question.codeSnippet}</code>
+              </pre>
+            </div>
           </div>
         )}
         {question.qType === 'CODING' && (

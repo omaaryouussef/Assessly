@@ -4603,6 +4603,93 @@
   overflow-wrap: anywhere;
 }
 
+.take-assessment-page .take-assessment-code-snippet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+.take-assessment-page .take-assessment-code-snippet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.take-assessment-page .take-assessment-code-snippet-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.take-assessment-page .take-assessment-code-snippet-lang {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.take-assessment-page .take-assessment-code-snippet-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.take-assessment-page .take-assessment-code-snippet-preview {
+  margin: 0;
+  padding: 16px 18px;
+  max-height: 280px;
+  overflow: auto;
+  background: #1e1e1e;
+  border-top: 1px solid #334155;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #e2e8f0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  tab-size: 4;
+}
+
+.take-assessment-page .take-assessment-code-snippet-preview code {
+  display: block;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: none;
+}
+
+.take-assessment-page .take-assessment-code-snippet-preview::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.take-assessment-page .take-assessment-code-snippet-preview::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 999px;
+  border: 2px solid #1e1e1e;
+}
+
+.take-assessment-page .take-assessment-code-snippet-preview::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
 .take-assessment-page .question-answer-block {
   display: flex;
   flex-direction: column;
@@ -5000,6 +5087,12 @@
 
   .take-assessment-page .question-row-body {
     padding: 16px;
+  }
+
+  .take-assessment-page .take-assessment-code-snippet-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .assessment-questions-nav {
