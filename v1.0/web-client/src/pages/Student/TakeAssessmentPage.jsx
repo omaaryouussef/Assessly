@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import Editor from '@monaco-editor/react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'

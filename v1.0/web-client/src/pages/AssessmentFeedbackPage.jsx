@@ -476,6 +476,26 @@ function FeedbackQuestionCard({
 
       <p className="feedback-question-prompt">{question.qPrompt}</p>
 
+      {question.codeSnippet && (
+        <div className="feedback-question-code-snippet">
+          <div className="feedback-question-code-snippet-header">
+            <span className="feedback-question-code-snippet-label">
+              Provided code
+            </span>
+            {question.progLang && (
+              <span className="feedback-question-code-snippet-lang">
+                {question.progLang}
+              </span>
+            )}
+          </div>
+          <div className="feedback-question-code-snippet-panel">
+            <pre className="feedback-question-code-snippet-preview">
+              <code>{question.codeSnippet}</code>
+            </pre>
+          </div>
+        </div>
+      )}
+
       <StudentAnswerDisplay question={question} answer={answer} />
 
       <div className="feedback-grading-panel">
@@ -630,6 +650,7 @@ function AssessmentFeedbackPage() {
           qPrompt: question.prompt,
           qMaxGrade: question.max_grade,
           progLang: question.prog_lang,
+          codeSnippet: question.code_snippet || null,
           options: question.options || [],
         }))
 
