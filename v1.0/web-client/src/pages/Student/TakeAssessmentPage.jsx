@@ -58,6 +58,7 @@ function QuestionRow({
   handleRunCode,
   codeOutput,
   isRunningCode,
+  codeSnippet,
 }) {
   return (
     <div
@@ -70,6 +71,18 @@ function QuestionRow({
       </div>
       <div className="question-row-body">
         <p className="question-row-prompt">{question.qPrompt}</p>
+        {question.codeSnippet && (
+          <div className="question-row-code-snippet">
+            <strong>Code snippet:</strong>
+            <Editor
+              height="200px"
+              theme="vs-dark"
+              defaultLanguage={question.progLang}
+              value={question.codeSnippet}
+              readOnly={true}
+            />
+          </div>
+        )}
         {question.qType === 'CODING' && (
           <div className="question-answer-block question-answer-block--coding">
             <div className="coding-workspace-toolbar">
@@ -429,6 +442,7 @@ function TakeAssessmentPage() {
             progLang: question.prog_lang,
             langVersion: question.lang_version,
             options: question.options || [],
+            codeSnippet: question.code_snippet || null,
           }))
         )
         setCodingQuestions(
