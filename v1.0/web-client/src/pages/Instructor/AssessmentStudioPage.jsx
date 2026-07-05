@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import Editor from '@monaco-editor/react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -61,6 +62,8 @@ function AssessmentStudioPage() {
   const [qMaxGrade, setQMaxGrade] = useState(0)
   const [progLang, setprogLang] = useState('')
   const [langVersion, setLangVersion] = useState('')
+  const [needCodeSnippet, setNeedCodeSnippet] = useState(false)
+  const [codeSnippet, setCodeSnippet] = useState('')
   const [questionsList, setQuestionsList] = useState([])
 
   const [questionErr, setQuestionErr] = useState('')
@@ -84,6 +87,7 @@ function AssessmentStudioPage() {
     setQPrompt('')
     setQMaxGrade(0)
     setprogLang('')
+    setNeedCodeSnippet(false)
     setLangVersion('')
     setOptions([])
     setQuestionErr('')
@@ -103,6 +107,8 @@ function AssessmentStudioPage() {
       clipboardAccess,
       screenSnapshot,
       questionStats,
+      needCodeSnippet,
+      codeSnippet,
       questionsList,
       editingAssessmentId: editingAssessment?.assessment_id ?? null,
     }),
@@ -117,6 +123,8 @@ function AssessmentStudioPage() {
       clipboardAccess,
       screenSnapshot,
       questionStats,
+      needCodeSnippet,
+      codeSnippet,
       questionsList,
       editingAssessment,
     ]
@@ -134,6 +142,8 @@ function AssessmentStudioPage() {
     setScreenSnapshot(Boolean(draft.screenSnapshot))
     setQuestionStats(Boolean(draft.questionStats))
     setQuestionsList(draft.questionsList || [])
+    setNeedCodeSnippet(draft.needCodeSnippet || false)
+    setCodeSnippet(draft.codeSnippet || '')
     setEditingAssessment(
       draft.editingAssessmentId
         ? { assessment_id: draft.editingAssessmentId }
@@ -144,6 +154,7 @@ function AssessmentStudioPage() {
     setQPrompt('')
     setQMaxGrade(0)
     setprogLang('')
+    setNeedCodeSnippet(false)
     setLangVersion('')
     setOptions([])
     setQuestionErr('')
@@ -183,12 +194,12 @@ function AssessmentStudioPage() {
           qMaxGrade: question.max_grade,
           progLang: question.prog_lang,
           options: question.options || [],
-        }))
+          codeSnippet: question.code_snippet || '',
+          needCodeSnippet: question.code_snippet ? true : false,
+        })),
       )
       setEditingAssessment({ assessment_id: assessmentId })
-    },
-    [token]
-  )
+    }, [token]);
 
   const applyNavigationIntent = useCallback(async () => {
     if (assessmentToEdit?.assessment_id) {
@@ -327,6 +338,7 @@ function AssessmentStudioPage() {
       progLang,
       langVersion,
       options: [...options],
+      codeSnippet: needCodeSnippet ? codeSnippet : null,
     }
 
     if (activeQuestionForm && activeQuestionForm !== 'new') {
@@ -352,6 +364,8 @@ function AssessmentStudioPage() {
     setQMaxGrade(question.qMaxGrade)
     setprogLang(question.progLang || '')
     setLangVersion(question.langVersion || '')
+    setNeedCodeSnippet(question.codeSnippet ? true : false)
+    setCodeSnippet(question.codeSnippet || '')
     setOptions([...(question.options || [])])
     setQuestionErr('')
   }
@@ -370,6 +384,8 @@ function AssessmentStudioPage() {
     setQMaxGrade(0)
     setprogLang('')
     setLangVersion('')
+    setNeedCodeSnippet(false)
+    setCodeSnippet('')
     setOptions([])
     setQuestionErr('')
   }
@@ -381,6 +397,8 @@ function AssessmentStudioPage() {
     setQMaxGrade(0)
     setprogLang('')
     setLangVersion('')
+    setNeedCodeSnippet(false)
+    setCodeSnippet('')
     setOptions([])
     setQuestionErr('')
   }
@@ -393,7 +411,7 @@ function AssessmentStudioPage() {
           : ' question-editor--edit'
       }`}
     >
-      <div className="form-group">
+      <div className="form-group form-group--question-type">
         <label htmlFor={`${idPrefix}-question-type`}>Question Type</label>
         <select
           id={`${idPrefix}-question-type`}
@@ -409,7 +427,7 @@ function AssessmentStudioPage() {
           <option value="MCQ">MCQ</option>
         </select>
       </div>
-      <div className="form-group">
+      <div className="form-group form-group--question-prompt">
         <label htmlFor={`${idPrefix}-question-prompt`}>Prompt</label>
         <input
           type="text"
@@ -419,7 +437,41 @@ function AssessmentStudioPage() {
           onChange={(e) => setQPrompt(e.target.value)}
         />
       </div>
-      <div className="form-group">
+
+      <div className="form-group form-group--code-snippet-toggle">
+        <label htmlFor={`${idPrefix}-question-need-code-snippet`}>
+          Add Code Snippet
+        </label>
+        <input
+          type="checkbox"
+          className="code-snippet-toggle"
+          id={`${idPrefix}-question-need-code-snippet`}
+          name={`${idPrefix}-question-need-code-snippet`}
+          checked={needCodeSnippet}
+          onChange={(e) => setNeedCodeSnippet(e.target.checked)}
+        />
+      </div>
+
+      {needCodeSnippet && (
+        <div className="code-snippet-workspace">
+          <div className="code-snippet-workspace-header">
+            <span className="code-snippet-workspace-label">Code</span>
+            <span className="code-snippet-workspace-hint">
+              Shown to students with the question
+            </span>
+          </div>
+          <div className="code-snippet-workspace-body">
+            <Editor
+              height="200px"
+              theme="vs-dark"
+              language="cpp"
+              value={codeSnippet}
+              onChange={(value) => setCodeSnippet(value)}
+            />
+          </div>
+        </div>
+      )}
+      <div className="form-group form-group--question-points">
         <label htmlFor={`${idPrefix}-question-max-grade`}>Points</label>
         <input
           type="number"
@@ -911,12 +963,25 @@ function AssessmentStudioPage() {
                       <div className="question-row-body">
                         <strong>Prompt:</strong>
                         <p>{question.qPrompt}</p>
+                        {question.codeSnippet && (
+                          <div className="question-row-code-snippet">
+                            <strong>Code snippet:</strong>
+                            <pre className="question-row-code-snippet-preview">
+                              <code>{question.codeSnippet}</code>
+                            </pre>
+                          </div>
+                        )}
                         <strong>Points:</strong>
                         <p>{question.qMaxGrade}</p>
                         {question.progLang && (
                           <>
                             <strong>Programming Language:</strong>
-                            <p>{question.progLang} <span className="lang-version">{question.langVersion}</span></p>
+                            <p>
+                              {question.progLang}{' '}
+                              <span className="lang-version">
+                                {question.langVersion}
+                              </span>
+                            </p>
                           </>
                         )}
                         {question.qType === 'MCQ' &&
