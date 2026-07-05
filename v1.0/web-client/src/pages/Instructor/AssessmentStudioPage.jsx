@@ -193,13 +193,16 @@ function AssessmentStudioPage() {
           qPrompt: question.prompt,
           qMaxGrade: question.max_grade,
           progLang: question.prog_lang,
+          langVersion: question.lang_version,
           options: question.options || [],
           codeSnippet: question.code_snippet || '',
           needCodeSnippet: question.code_snippet ? true : false,
-        })),
+        }))
       )
       setEditingAssessment({ assessment_id: assessmentId })
-    }, [token]);
+    },
+    [token]
+  )
 
   const applyNavigationIntent = useCallback(async () => {
     if (assessmentToEdit?.assessment_id) {
