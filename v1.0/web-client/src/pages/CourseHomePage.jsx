@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { getApiBase } from '../config/api'
 import { useParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -11,9 +12,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
 import { useCourseContext } from '../../contexts/CourseContext'
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function formatValue(value) {
   if (!value || String(value).trim() === '') return 'Not set'
@@ -35,7 +33,7 @@ function CourseHomePage() {
     setErrorMessage('')
 
     try {
-      const response = await fetch(`${API_BASE}/api/courses/home/${courseId}`, {
+      const response = await fetch(`${getApiBase()}/api/courses/home/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await response.json()

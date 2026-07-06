@@ -1,7 +1,13 @@
-import React from "react";
+import React from 'react'
+import DesktopApiSettings from '../components/desktop/DesktopApiSettings'
 
 function AccountPage() {
-  return <h2>Account Page</h2>;
+  return (
+    <div>
+      <h2>Account</h2>
+      <DesktopApiSettings />
+    </div>
+  )
 }
 
-export default AccountPage;
+export default AccountPage

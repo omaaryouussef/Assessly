@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { getApiBase } from '../config/api'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -19,9 +20,6 @@ import {
   formatDueDateTimeLabel,
   getAssessmentStatus,
 } from '../utils/assessmentDue'
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 const ASSIGNMENT_ICONS = {
   CODING: faCode,
@@ -170,7 +168,7 @@ function AllAssignmentsPage() {
 
   const fetchAssignments = async () => {
     const response = await fetch(
-      `${API_BASE}/api/assessments/assignments/${courseId}`,
+      `${getApiBase()}/api/assessments/assignments/${courseId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -195,7 +193,7 @@ function AllAssignmentsPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${assessmentId}/publish`,
+        `${getApiBase()}/api/assessments/${assessmentId}/publish`,
         {
           method: 'PATCH',
           headers: {
@@ -256,7 +254,7 @@ function AllAssignmentsPage() {
     if (!assignmentToDelete) return
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${assignmentToDelete.assessment_id}`,
+        `${getApiBase()}/api/assessments/${assignmentToDelete.assessment_id}`,
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },

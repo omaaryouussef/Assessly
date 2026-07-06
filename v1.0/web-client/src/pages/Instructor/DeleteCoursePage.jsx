@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
+import { getApiBase } from '../../config/api'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { useCourseContext } from '../../../contexts/CourseContext'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function getInitialCourse(locationState, courseData) {
   if (locationState?.course) return locationState.course
@@ -31,7 +30,7 @@ function DeleteCoursePage() {
   useEffect(() => {
     if (!token) return
     const fetchCourses = async () => {
-      const response = await fetch(`${API_BASE}/api/courses/`, {
+      const response = await fetch(`${getApiBase()}/api/courses/`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!response.ok) throw new Error('Failed to fetch courses.')
@@ -81,7 +80,7 @@ function DeleteCoursePage() {
     if (!confirmed) return
 
     try {
-      const response = await fetch(`${API_BASE}/api/courses/${selectedCourseId}`, {
+      const response = await fetch(`${getApiBase()}/api/courses/${selectedCourseId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })

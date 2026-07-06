@@ -1,0 +1,36 @@
+appId: edu.assessly.desktop
+productName: Assessly
+copyright: Copyright © Assessly
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - src/**/*
+  - package.json
+
+extraResources:
+  - from: ../web-client/dist
+    to: web-client
+    filter:
+      - '**/*'
+
+win:
+  target:
+    - nsis
+  artifactName: Assessly-Setup-${version}.${ext}
+
+mac:
+  target:
+    - dmg
+  artifactName: Assessly-${version}.${ext}
+  category: public.app-category.education
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+
+dmg:
+  title: Assessly ${version}

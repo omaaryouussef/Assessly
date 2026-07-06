@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, use } from 'react'
+import { getApiBase } from '../config/api'
 import { NavLink, useParams, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -16,9 +17,6 @@ import {
 import { useAuth } from '../components/auth/AuthWrapper'
 import { formatDueDateTimeLabel, getAssessmentStatus } from '../utils/assessmentDue'
 
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 const QUIZ_ICONS = {
   CODING: faCode,
@@ -212,7 +210,7 @@ function AllQuizzesPage() {
 
   const fetchQuizzes = useCallback(async () => {
     const response = await fetch(
-      `${API_BASE}/api/assessments/quizzes/${courseId}`,
+      `${getApiBase()}/api/assessments/quizzes/${courseId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -226,7 +224,7 @@ function AllQuizzesPage() {
     setIsLoadingStudents(true)
     try {
       const response = await fetch(
-        `${API_BASE}/api/courses/people/${courseId}`,
+        `${getApiBase()}/api/courses/people/${courseId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -253,7 +251,7 @@ function AllQuizzesPage() {
       setIsLoadingStudents(true)
       try {
         const response = await fetch(
-          `${API_BASE}/api/courses/people/${courseId}`,
+          `${getApiBase()}/api/courses/people/${courseId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -265,7 +263,7 @@ function AllQuizzesPage() {
         )
 
         const allowedResponse = await fetch(
-          `${API_BASE}/api/assessments/allowed-students/${quiz.assessment_id}`,
+          `${getApiBase()}/api/assessments/allowed-students/${quiz.assessment_id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -327,7 +325,7 @@ function AllQuizzesPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${assessmentId}/publish`,
+        `${getApiBase()}/api/assessments/${assessmentId}/publish`,
         {
           method: 'PATCH',
           headers: {
@@ -358,7 +356,7 @@ function AllQuizzesPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${assessmentId}/close`,
+        `${getApiBase()}/api/assessments/${assessmentId}/close`,
         {
           method: 'PATCH',
           headers: {
@@ -478,7 +476,7 @@ function AllQuizzesPage() {
     if (!quizToDelete) return
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${quizToDelete.assessment_id}`,
+        `${getApiBase()}/api/assessments/${quizToDelete.assessment_id}`,
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },

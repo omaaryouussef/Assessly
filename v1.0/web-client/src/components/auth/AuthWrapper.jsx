@@ -1,8 +1,7 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 import { useContext, createContext, useState, useEffect } from 'react'
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
+import { getApiBase } from '../../config/api'
 const AuthContext = createContext()
 
 function AuthWrapper({ children }) {
@@ -20,7 +19,7 @@ function AuthWrapper({ children }) {
           setToken(null)
           return
         }
-        const response = await fetch(`${API_BASE}/api/users/user`, {
+        const response = await fetch(`${getApiBase()}/api/users/user`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -58,7 +57,7 @@ function AuthWrapper({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch(`${API_BASE}/api/users/login`, {
+      const response = await fetch(`${getApiBase()}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +86,7 @@ function AuthWrapper({ children }) {
 
   const register = async (email, password, name, auc_id, role) => {
     try {
-      const response = await fetch(`${API_BASE}/api/users/register`, {
+      const response = await fetch(`${getApiBase()}/api/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

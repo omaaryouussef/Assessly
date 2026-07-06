@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import { getApiBase } from '../../config/api'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChartLine, faCommentDots } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getAssessmentStatus } from '../../utils/assessmentDue'
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function AssessmentRow({ assessment, user }) {
   const status = getAssessmentStatus(assessment)
@@ -95,7 +93,7 @@ function ViewGradesPage() {
     const fetchAssessments = async () => {
       try {
         const response = await fetch(
-          `${API_BASE}/api/assessments/all/${courseId}`,
+          `${getApiBase()}/api/assessments/all/${courseId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

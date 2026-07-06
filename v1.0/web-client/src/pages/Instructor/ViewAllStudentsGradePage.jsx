@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { getApiBase } from '../../config/api'
 import { useBlocker, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChartLine } from '@fortawesome/free-solid-svg-icons'
 import { getAssessmentStatus } from '../../utils/assessmentDue'
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function usesInlineGrading(assessment) {
   if (assessment.has_submitted) return false
@@ -148,7 +146,7 @@ function ViewAllStudentsGradePage() {
     const fetchAssessmentsForAllStudents = async () => {
       try {
         const response = await fetch(
-          `${API_BASE}/api/assessments/all-students/${courseId}`,
+          `${getApiBase()}/api/assessments/all-students/${courseId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -262,7 +260,7 @@ function ViewAllStudentsGradePage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/grades/${courseId}`,
+        `${getApiBase()}/api/assessments/grades/${courseId}`,
         {
           method: 'PATCH',
           headers: {

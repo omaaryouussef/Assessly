@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { getApiBase } from '../../config/api'
 import Editor from '@monaco-editor/react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -20,9 +21,6 @@ import {
   parseDueDateForInput,
   parseDueTimeForInput,
 } from '../../utils/assessmentDue'
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function AssessmentStudioPage() {
   const navigate = useNavigate()
@@ -164,7 +162,7 @@ function AssessmentStudioPage() {
   const loadAssessmentForEdit = useCallback(
     async (assessmentId) => {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${assessmentId}`,
+        `${getApiBase()}/api/assessments/${assessmentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -624,7 +622,7 @@ function AssessmentStudioPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/assessments/${courseId}`, {
+      const response = await fetch(`${getApiBase()}/api/assessments/${courseId}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -710,7 +708,7 @@ function AssessmentStudioPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${editingAssessment.assessment_id}`,
+        `${getApiBase()}/api/assessments/${editingAssessment.assessment_id}`,
         {
           method: 'PUT',
           headers: {

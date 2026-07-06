@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { getApiBase } from '../config/api'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -14,9 +15,6 @@ import {
   formatSubmissionLateness,
   getAssessmentStatus,
 } from '../utils/assessmentDue'
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 const EMPTY_QUESTION_FEEDBACK = {
   instructorFeedback: [],
@@ -598,15 +596,15 @@ function AssessmentFeedbackPage() {
 
       try {
         const [assessmentRes, answersRes, feedbackRes] = await Promise.all([
-          fetch(`${API_BASE}/api/assessments/${assessmentId}`, {
+          fetch(`${getApiBase()}/api/assessments/${assessmentId}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch(
-            `${API_BASE}/api/assessments/${assessmentId}/student-answers/${studentId}`,
+            `${getApiBase()}/api/assessments/${assessmentId}/student-answers/${studentId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           ),
           fetch(
-            `${API_BASE}/api/assessments/${assessmentId}/questions-feedback/${studentId}`,
+            `${getApiBase()}/api/assessments/${assessmentId}/questions-feedback/${studentId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           ),
         ])
@@ -779,7 +777,7 @@ function AssessmentFeedbackPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${assessmentId}/question-grades/${studentId}`,
+        `${getApiBase()}/api/assessments/${assessmentId}/question-grades/${studentId}`,
         {
           method: 'PATCH',
           headers: {
@@ -815,7 +813,7 @@ function AssessmentFeedbackPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${assessmentId}/questions-feedback/${studentId}`,
+        `${getApiBase()}/api/assessments/${assessmentId}/questions-feedback/${studentId}`,
         {
           method: 'POST',
           headers: {
@@ -890,7 +888,7 @@ function AssessmentFeedbackPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/questions-feedback/${commentId}/resolve`,
+        `${getApiBase()}/api/assessments/questions-feedback/${commentId}/resolve`,
         {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` },

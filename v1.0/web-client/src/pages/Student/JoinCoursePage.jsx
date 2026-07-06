@@ -1,9 +1,7 @@
 import React, { useState } from "react";
+import { getApiBase } from '../../config/api'
 import { useAuth } from "../../components/auth/AuthWrapper";
 import { useNavigate } from "react-router-dom";
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
-
-
 function JoinCoursePage() {
   const {token, user} = useAuth();
   console.log("user: ", user);
@@ -21,7 +19,7 @@ function JoinCoursePage() {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE}/api/courses/join`, {
+      const response = await fetch(`${getApiBase()}/api/courses/join`, {
         method: 'POST',
         headers:{
           Authorization: `Bearer ${token}`,

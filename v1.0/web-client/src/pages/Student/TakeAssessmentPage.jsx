@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { getApiBase } from '../../config/api'
 import Editor from '@monaco-editor/react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../components/auth/AuthWrapper'
@@ -19,9 +20,6 @@ import {
 } from '../../utils/assessmentDue'
 
 import { isDraftEmpty, loadDraft, saveDraft, clearDraft } from '../../utils/takeAssessmentDraft'
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function getAssessmentListPath(courseId, assessType) {
   if (assessType === 'ASSIGNMENT') {
@@ -290,7 +288,7 @@ function TakeAssessmentPage() {
 
       try {
         const response = await fetch(
-          `${API_BASE}/api/assessments/${resolvedAssessmentId}/run-code`,
+          `${getApiBase()}/api/assessments/${resolvedAssessmentId}/run-code`,
           {
             method: 'POST',
             headers: {
@@ -341,7 +339,7 @@ function TakeAssessmentPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/assessments/${resolvedAssessmentId}/submit`,
+        `${getApiBase()}/api/assessments/${resolvedAssessmentId}/submit`,
         {
           method: 'POST',
           headers: {
@@ -383,7 +381,7 @@ function TakeAssessmentPage() {
 
       try {
         const response = await fetch(
-          `${API_BASE}/api/assessments/${resolvedAssessmentId}`,
+          `${getApiBase()}/api/assessments/${resolvedAssessmentId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

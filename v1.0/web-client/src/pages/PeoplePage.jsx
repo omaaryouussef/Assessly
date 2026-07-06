@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { getApiBase } from '../config/api'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -8,9 +9,6 @@ import {
   faTrash,
   faPlus,
 } from '@fortawesome/free-solid-svg-icons'
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function PeopleRow({ person, isInstructorUser, onRequestRemove }) {
   const isInstructor = person.role === 'INSTRUCTOR'
@@ -58,7 +56,7 @@ function PeoplePage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/courses/people/${courseId}`,
+        `${getApiBase()}/api/courses/people/${courseId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -95,8 +93,8 @@ function PeoplePage() {
 
     const isTa = personToRemove.role === 'TA'
     const endpoint = isTa
-      ? `${API_BASE}/api/courses/remove-ta/${courseId}`
-      : `${API_BASE}/api/courses/remove/${courseId}`
+      ? `${getApiBase()}/api/courses/remove-ta/${courseId}`
+      : `${getApiBase()}/api/courses/remove/${courseId}`
     const body = isTa
       ? { taId: personToRemove.user_id }
       : { studentId: personToRemove.user_id }
@@ -157,8 +155,8 @@ function PeoplePage() {
 
     const isTa = addMode === 'ta'
     const endpoint = isTa
-      ? `${API_BASE}/api/courses/add-ta/${courseId}`
-      : `${API_BASE}/api/courses/add/${courseId}`
+      ? `${getApiBase()}/api/courses/add-ta/${courseId}`
+      : `${getApiBase()}/api/courses/add/${courseId}`
 
     try {
       const response = await fetch(endpoint, {

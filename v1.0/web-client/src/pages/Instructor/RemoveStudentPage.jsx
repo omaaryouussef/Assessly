@@ -1,9 +1,8 @@
 import React from "react";
+import { getApiBase } from '../../config/api'
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../components/auth/AuthWrapper";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 
 function RemoveStudentPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -19,7 +18,7 @@ function RemoveStudentPage() {
       return
     }
     try {
-      const response = await fetch(`${API_BASE}/api/courses/${courseId}/remove-student`, {
+      const response = await fetch(`${getApiBase()}/api/courses/${courseId}/remove-student`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })

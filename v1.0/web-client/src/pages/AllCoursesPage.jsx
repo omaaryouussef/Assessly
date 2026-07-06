@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { getApiBase } from '../config/api'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/auth/AuthWrapper'
 import { useCourseContext } from '../../contexts/CourseContext'
@@ -16,8 +17,6 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 const ICON_THEMES = ['blue', 'orange', 'purple', 'gray']
 const CARD_ICONS = [faCode, faSitemap, faTerminal, faBookOpen]
 
@@ -142,7 +141,7 @@ function AllCoursesPage() {
 
   useEffect(() => {
     const fetchCourses = async () => {
-      const response = await fetch(`${API_BASE}/api/courses/`, {
+      const response = await fetch(`${getApiBase()}/api/courses/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

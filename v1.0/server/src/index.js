@@ -7,8 +7,21 @@ import db from "../db/index.js";
 const app = express();
 const port = Number(process.env.PORT) || 3011;
 
+const defaultOrigins = ["http://localhost:5173", "app://assessly"];
+const allowedOrigins = (process.env.CORS_ORIGINS || defaultOrigins.join(","))
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
 const corsOptions = {
-    origin: "http://localhost:5173",
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
     credentials: true,
 };
 
