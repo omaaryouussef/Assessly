@@ -23,7 +23,8 @@ export const loginUser = async (req, res) => {
     const token = jwt.sign({ id: user.user_id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
-    const { password: _, ...userWithoutPassword } = user;
+    const { hashed_password: _, ...userWithoutPassword } = user;
+    console.log(userWithoutPassword);
     res.json({ user: userWithoutPassword, token });
   } catch (error) {
     console.error("Error logging in user:", error);

@@ -6050,3 +6050,101 @@ html[data-exam-mode='true'] #root {
   color: #6b7280;
   font-size: 0.9rem;
 }
+
+/* Account page */
+.account-page {
+  padding-bottom: 32px;
+}
+
+.account-page-header p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.account-profile-card,
+.account-desktop-settings {
+  margin-top: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.account-profile-card-header,
+.account-desktop-settings-header {
+  padding: 16px 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 1px solid #eef2f6;
+}
+
+.account-profile-card-header h2,
+.account-desktop-settings-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--bold-text-color);
+}
+
+.account-profile-card-header p,
+.account-desktop-settings-header p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--light-text-color);
+}
+
+.account-info-grid {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+
+.account-info-item {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.account-info-item dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.account-info-item dd {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bold-text-color);
+  word-break: break-word;
+}
+
+.account-desktop-settings-body {
+  padding: 20px;
+}
+
+.account-desktop-settings-body .desktop-settings {
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .account-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-info-item {
+    border-bottom: 1px solid #eef2f6;
+  }
+
+  .account-info-item:last-child {
+    border-bottom: none;
+  }
+}

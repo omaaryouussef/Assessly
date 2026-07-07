@@ -16,7 +16,7 @@ export const authenticate = async (req, res, next) => {
       decoded.id,
     ]);
     const data = result.rows[0];
-    const { password: _, ...userWithoutPassword } = data;
+    const { hashed_password: _, ...userWithoutPassword } = data;
     const user = { ...userWithoutPassword, token };
     req.user = user;
     next();
