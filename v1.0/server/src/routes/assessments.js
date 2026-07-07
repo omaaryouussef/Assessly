@@ -20,6 +20,9 @@ import {
   saveQuestionGradesForStudent,
   upsertQuestionFeedback,
   resolveQuestionFeedback,
+  getExamsByUserId,
+  getQuizzesByUserId,
+  getAssignmentsByUserId,
 } from "../handlers/assessmentHandlers.js";
 import {
   createProctoringEvent,
@@ -158,6 +161,28 @@ assessmentsRouter.get(
   authenticate,
   authorize("INSTRUCTOR", "TA", "STUDENT"),
   getProctoringEvents,
+);
+
+
+assessmentsRouter.get(
+  "/user/exams/",
+  authenticate,
+  authorize("STUDENT", "INSTRUCTOR", "TA"),
+  getExamsByUserId,
+);
+
+assessmentsRouter.get(
+  "/user/quizzes/",
+  authenticate,
+  authorize("STUDENT", "INSTRUCTOR", "TA"),
+  getQuizzesByUserId,
+);
+
+assessmentsRouter.get(
+  "/user/assignments/",
+  authenticate,
+  authorize("STUDENT", "INSTRUCTOR", "TA"),
+  getAssignmentsByUserId,
 );
 
 export default assessmentsRouter;

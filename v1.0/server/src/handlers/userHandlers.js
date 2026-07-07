@@ -24,7 +24,6 @@ export const loginUser = async (req, res) => {
       expiresIn: "7d",
     });
     const { hashed_password: _, ...userWithoutPassword } = user;
-    console.log(userWithoutPassword);
     res.json({ user: userWithoutPassword, token });
   } catch (error) {
     console.error("Error logging in user:", error);

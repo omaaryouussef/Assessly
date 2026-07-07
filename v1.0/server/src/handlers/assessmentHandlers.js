@@ -1542,3 +1542,246 @@ export const resolveQuestionFeedback = async (req, res) => {
       .json({ error: "Failed to resolve question feedback" });
   }
 };
+
+
+function mapAssessmentsByDueDate(rows) {
+  const assessmentsByDate = {};
+
+  for (const assessment of rows) {
+    if (!assessment.due_date) {
+      continue;
+    }
+
+    if (!assessmentsByDate[assessment.due_date]) {
+      assessmentsByDate[assessment.due_date] = [];
+    }
+
+    assessmentsByDate[assessment.due_date].push({
+      title: assessment.title,
+      courseTitle: assessment.course_title,
+      courseId: assessment.course_id,
+    });
+  }
+
+  return assessmentsByDate;
+}
+
+async function getStudentScheduleAssessmentsByType(userId, assessType) {
+  const result = await db.query(
+    `SELECT
+        a.title,
+        TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date,
+        c.coursetitle AS course_title, c.course_id
+     FROM assessment a
+     JOIN course c
+        ON a.course_id = c.course_id
+     JOIN student_course sc
+        ON sc.course_id = c.course_id
+     INNER JOIN student_access_assessments saa
+        ON saa.assessment_id = a.assessment_id
+       AND saa.student_id = sc.student_id
+     LEFT JOIN student_assessment sa
+        ON sa.student_id = sc.student_id
+       AND sa.assessment_id = a.assessment_id
+     WHERE
+        sc.student_id = $1
+        AND a.assess_type = $2
+        AND a.is_published = true
+        AND saa.can_access = true
+        AND a.due_date IS NOT NULL
+        AND sa.date_submitted IS NULL`,
+    [userId, assessType],
+  );
+
+  return result.rows;
+}
+
+export const getExamsByUserId = async (req, res) => {
+  const { user_id: userId, role } = req.user;
+  const exams = {};
+
+  try {
+    if (role === "STUDENT") {
+      const rows = await getStudentScheduleAssessmentsByType(userId, "EXAM");
+      return res.status(200).json(mapAssessmentsByDueDate(rows));
+    }
+
+    let userExams;
+
+    if (role === "INSTRUCTOR") {
+      userExams = await db.query(
+        `SELECT
+            a.title,
+            TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date,
+            c.coursetitle AS course_title, c.course_id 
+         FROM assessment a
+         JOIN course c
+            ON a.course_id = c.course_id
+         WHERE
+            c.instructor_id = $1
+            AND a.assess_type = 'EXAM';`,
+        [userId]
+      );
+    } else if (role === "TA") {
+      userExams = await db.query(
+        `SELECT
+            a.title,
+            TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date,
+            c.coursetitle AS course_title, c.course_id
+         FROM assessment a
+         JOIN course c
+            ON a.course_id = c.course_id
+         WHERE
+            c.ta_id = $1
+            AND a.assess_type = 'EXAM';`,
+        [userId]
+      );
+    } else {
+      return res.status(403).json({ error: "Invalid role" });
+    }
+
+    for (const exam of userExams.rows) {
+      if (!exams[exam.due_date]) {
+        exams[exam.due_date] = [];
+      }
+
+      exams[exam.due_date].push({
+        title: exam.title,
+        courseTitle: exam.course_title,
+        courseId: exam.course_id,
+      });
+    }
+
+    return res.status(200).json(exams);
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      error: "Failed to get exams by user id",
+    });
+  }
+};
+
+export const getQuizzesByUserId = async (req, res) => {
+  const { user_id: userId, role } = req.user;
+  const quizzes = {};
+
+  try {
+      if (role === "STUDENT") {
+          const rows = await getStudentScheduleAssessmentsByType(userId, "QUIZ");
+          return res.status(200).json(mapAssessmentsByDueDate(rows));
+      }
+
+      let userQuizzes;
+
+      if (role === "INSTRUCTOR") {
+          userQuizzes = await db.query(
+              `SELECT a.title,
+                      TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date,
+                      c.coursetitle AS course_title, c.course_id
+               FROM assessment a
+               JOIN course c
+                   ON a.course_id = c.course_id
+               WHERE c.instructor_id = $1
+                 AND a.assess_type = 'QUIZ'`,
+              [userId]
+          );
+      } else if (role === "TA") {
+          userQuizzes = await db.query(
+              `SELECT a.title,
+                      TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date,
+                      c.coursetitle AS course_title, c.course_id
+               FROM assessment a
+               JOIN course c
+                   ON a.course_id = c.course_id
+               WHERE c.ta_id = $1
+                 AND a.assess_type = 'QUIZ'`,
+              [userId]
+          );
+      } else {
+          return res.status(403).json({ error: "Invalid role" });
+      }
+
+      for (const quiz of userQuizzes.rows) {
+          if (!quizzes[quiz.due_date]) {
+              quizzes[quiz.due_date] = [];
+          }
+
+          quizzes[quiz.due_date].push({
+              title: quiz.title,
+              courseTitle: quiz.course_title,
+              courseId: quiz.course_id,
+          });
+      }
+
+      return res.status(200).json(quizzes);
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Failed to get quizzes by user id" });
+  }
+};
+
+
+export const getAssignmentsByUserId = async (req, res) => {
+  const { user_id: userId, role } = req.user;
+  const assignments = {};
+
+  try {
+    if (role === "STUDENT") {
+      const rows = await getStudentScheduleAssessmentsByType(userId, "ASSIGNMENT");
+      return res.status(200).json(mapAssessmentsByDueDate(rows));
+    }
+
+    let userAssignments;
+
+    if (role === "INSTRUCTOR") {
+      userAssignments = await db.query(
+        `SELECT
+            a.title,
+            TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date,
+            c.coursetitle AS course_title, c.course_id
+         FROM assessment a
+         JOIN course c
+            ON a.course_id = c.course_id
+         WHERE
+            c.instructor_id = $1
+            AND a.assess_type = 'ASSIGNMENT';`,
+        [userId]
+      );
+    } else if (role === "TA") {
+      userAssignments = await db.query(
+        `SELECT
+            a.title,
+            TO_CHAR(a.due_date, 'YYYY-MM-DD') AS due_date,
+            c.coursetitle AS course_title, c.course_id
+         FROM assessment a
+         JOIN course c
+            ON a.course_id = c.course_id
+         WHERE
+            c.ta_id = $1
+            AND a.assess_type = 'ASSIGNMENT';`,
+        [userId]
+      );
+    } else {
+      return res.status(403).json({ error: "Invalid role" });
+    }
+
+    for (const assignment of userAssignments.rows) {
+      if (!assignments[assignment.due_date]) {
+        assignments[assignment.due_date] = [];
+      }
+
+      assignments[assignment.due_date].push({
+        title: assignment.title,
+        courseTitle: assignment.course_title,
+        courseId: assignment.course_id,
+      });
+    }
+
+    return res.status(200).json(assignments);
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      error: "Failed to get assignments by user id",
+    });
+  }
+};
