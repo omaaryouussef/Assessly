@@ -33,7 +33,6 @@ Assessly/
 Create a PostgreSQL database and apply:
 
 - `v1.0/server/db/schema.sql`
-- `v1.0/server/db/migrations/001_desktop_proctoring.sql` (existing databases)
 
 ### 2. Server environment
 
