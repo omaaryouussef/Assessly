@@ -6,6 +6,12 @@ import {
   getDefaultLocalApiUrl,
   setApiBaseUrl,
 } from './config.js'
+import { LockdownManager } from './lockdown/LockdownManager.js'
+import {
+  getLocalServerStatus,
+  startLocalServer,
+  stopLocalServer,
+} from './localServer.js'
 import { registerAppProtocol, registerPrivilegedScheme } from './protocol.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -13,6 +19,9 @@ const isDev = !app.isPackaged
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
 
 registerPrivilegedScheme()
+
+let mainWindow = null
+let lockdownManager = null
 
 function getWebClientDistPath() {
   if (isDev) {
@@ -23,21 +32,31 @@ function getWebClientDistPath() {
 }
 
 function getPreloadPath() {
-  return path.join(__dirname, '../preload/index.js')
+  return path.join(__dirname, '../preload/index.cjs')
+}
+
+function emitLockdownViolation(payload) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return
+  }
+
+  mainWindow.webContents.send('lockdown:violation', payload)
 }
 
 function createMainWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 960,
     minHeight: 640,
     show: false,
+    fullscreenable: true,
+    frame: true,
     webPreferences: {
       preload: getPreloadPath(),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   })
 
@@ -49,7 +68,6 @@ function createMainWindow() {
 
   if (isDev) {
     mainWindow.loadURL(DEV_SERVER_URL)
-    mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
     mainWindow.loadURL('app://assessly/index.html')
   }
@@ -62,12 +80,77 @@ function registerIpcHandlers() {
   ipcMain.handle('config:set-api-base-url', (_event, url) => setApiBaseUrl(url))
   ipcMain.handle('config:get-default-local-url', () => getDefaultLocalApiUrl())
   ipcMain.handle('config:get-platform', () => process.platform)
+
+  ipcMain.handle('local-server:start', async () => {
+    const status = await startLocalServer()
+    return status
+  })
+
+  ipcMain.handle('local-server:stop', async () => {
+    await stopLocalServer()
+    return getLocalServerStatus()
+  })
+
+  ipcMain.handle('local-server:status', () => getLocalServerStatus())
+
+  ipcMain.handle('lockdown:precheck', async (_event, profile) => {
+    if (!lockdownManager) {
+      return { ok: true, issues: [] }
+    }
+    return lockdownManager.precheck({
+      ...profile,
+      apiBaseUrl: profile?.apiBaseUrl || getApiBaseUrl(),
+    })
+  })
+
+  ipcMain.handle('lockdown:start', async (_event, profile) => {
+    if (!lockdownManager) {
+      return { ok: false, issues: [{ code: 'NO_MANAGER', message: 'Lockdown unavailable' }] }
+    }
+
+    return lockdownManager.start({
+      ...profile,
+      apiBaseUrl: profile?.apiBaseUrl || getApiBaseUrl(),
+    })
+  })
+
+  ipcMain.handle('lockdown:stop', async () => {
+    try {
+      if (lockdownManager) {
+        await lockdownManager.stop()
+      }
+    } catch (error) {
+      console.error('lockdown:stop failed:', error)
+    }
+    return { ok: true }
+  })
+
+  ipcMain.handle('lockdown:is-active', () => Boolean(lockdownManager?.isActive()))
+
+  ipcMain.handle('exam:enter-presentation', () => {
+    if (!lockdownManager) {
+      return { ok: false }
+    }
+    return lockdownManager.enterPresentationMode()
+  })
+
+  ipcMain.handle('exam:exit-presentation', () => {
+    if (!lockdownManager) {
+      return { ok: false }
+    }
+    return lockdownManager.exitPresentationMode()
+  })
 }
 
 app.whenReady().then(() => {
   if (!isDev) {
     registerAppProtocol(getWebClientDistPath())
   }
+
+  lockdownManager = new LockdownManager(
+    () => mainWindow,
+    emitLockdownViolation,
+  )
 
   registerIpcHandlers()
   createMainWindow()
@@ -79,12 +162,15 @@ app.whenReady().then(() => {
   })
 })
 
+app.on('before-quit', async () => {
+  if (lockdownManager) {
+    await lockdownManager.stop()
+  }
+  await stopLocalServer()
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
-
-
-

@@ -67,6 +67,8 @@ CREATE TABLE Security_Settings
     clipboardAccess BOOLEAN NOT NULL,
     screenSnapshot BOOLEAN NOT NULL,
     questionStats BOOLEAN NOT NULL,
+    networkRestriction BOOLEAN NOT NULL DEFAULT false,
+    processMonitoring BOOLEAN NOT NULL DEFAULT false,
     assessment_id INT NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (assessment_id) REFERENCES Assessment(assessment_id)
@@ -143,3 +145,12 @@ student_question_answer_id INT NOT NULL,
 FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
 FOREIGN KEY (question_id) REFERENCES question(question_id) ON DELETE CASCADE,
 FOREIGN KEY (student_question_answer_id) REFERENCES student_question_answer(id) ON DELETE CASCADE);
+
+CREATE TABLE Proctoring_Event (
+    id SERIAL PRIMARY KEY,
+    student_assessment_id INT NOT NULL REFERENCES student_assessment(id),
+    event_type VARCHAR(50) NOT NULL,  
+    severity VARCHAR(20) NOT NULL,   
+    metadata JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

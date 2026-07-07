@@ -14,6 +14,8 @@ export function isDraftEmpty(draft) {
     Boolean(draft.clipboardAccess) ||
     Boolean(draft.screenSnapshot) ||
     Boolean(draft.questionStats) ||
+    Boolean(draft.networkRestriction) ||
+    Boolean(draft.processMonitoring) ||
     draft.editingAssessmentId != null
 
   return !hasContent

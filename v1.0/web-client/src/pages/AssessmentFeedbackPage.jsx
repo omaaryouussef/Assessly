@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import ProctoringEventsPanel from '../components/desktop/ProctoringEventsPanel'
 import { getApiBase } from '../config/api'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../components/auth/AuthWrapper'
@@ -1043,6 +1044,11 @@ function AssessmentFeedbackPage() {
                 )}
               </div>
             </section>
+
+            <ProctoringEventsPanel
+              assessmentId={assessmentId}
+              studentId={studentId}
+            />
 
             {isLoading ? (
               <p className="assessment-feedback-loading">Loading submission…</p>

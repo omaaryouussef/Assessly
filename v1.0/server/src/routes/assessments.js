@@ -21,6 +21,10 @@ import {
   upsertQuestionFeedback,
   resolveQuestionFeedback,
 } from "../handlers/assessmentHandlers.js";
+import {
+  createProctoringEvent,
+  getProctoringEvents,
+} from "../handlers/proctoringHandlers.js";
 import { authorize } from "../middleware/authorize.js";
 
 const assessmentsRouter = Router();
@@ -140,6 +144,20 @@ assessmentsRouter.patch(
   authenticate,
   authorize("INSTRUCTOR", "TA"),
   saveQuestionGradesForStudent,
+);
+
+assessmentsRouter.post(
+  "/:assessmentId/proctoring-events",
+  authenticate,
+  authorize("STUDENT"),
+  createProctoringEvent,
+);
+
+assessmentsRouter.get(
+  "/:assessmentId/proctoring-events",
+  authenticate,
+  authorize("INSTRUCTOR", "TA", "STUDENT"),
+  getProctoringEvents,
 );
 
 export default assessmentsRouter;

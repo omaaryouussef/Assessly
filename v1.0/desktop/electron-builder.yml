@@ -15,17 +15,27 @@ extraResources:
     to: web-client
     filter:
       - '**/*'
+  - from: ../server
+    to: server
+    filter:
+      - 'src/**/*'
+      - 'db/**/*'
+      - 'package.json'
 
 win:
   target:
     - nsis
   artifactName: Assessly-Setup-${version}.${ext}
+  # Set CSC_LINK and CSC_KEY_PASSWORD env vars for Authenticode signing in CI.
 
 mac:
   target:
     - dmg
   artifactName: Assessly-${version}.${ext}
   category: public.app-category.education
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  # Set APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID for notarization.
 
 nsis:
   oneClick: false
@@ -34,3 +44,7 @@ nsis:
 
 dmg:
   title: Assessly ${version}
+
+publish:
+  provider: generic
+  url: https://assessly.example.com/downloads

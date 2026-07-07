@@ -21,6 +21,7 @@ import {
   parseDueDateForInput,
   parseDueTimeForInput,
 } from '../../utils/assessmentDue'
+import { normalizeSecuritySettings } from '../../utils/securitySettings'
 
 function AssessmentStudioPage() {
   const navigate = useNavigate()
@@ -51,6 +52,8 @@ function AssessmentStudioPage() {
   const [clipboardAccess, setClipboardAccess] = useState(false)
   const [screenSnapshot, setScreenSnapshot] = useState(false)
   const [questionStats, setQuestionStats] = useState(false)
+  const [networkRestriction, setNetworkRestriction] = useState(false)
+  const [processMonitoring, setProcessMonitoring] = useState(false)
 
   //Questions specifications
   const [activeQuestionForm, setActiveQuestionForm] = useState(null)
@@ -79,6 +82,8 @@ function AssessmentStudioPage() {
     setClipboardAccess(false)
     setScreenSnapshot(false)
     setQuestionStats(false)
+    setNetworkRestriction(false)
+    setProcessMonitoring(false)
     setQuestionsList([])
     setActiveQuestionForm(null)
     setQType('')
@@ -105,6 +110,8 @@ function AssessmentStudioPage() {
       clipboardAccess,
       screenSnapshot,
       questionStats,
+      networkRestriction,
+      processMonitoring,
       needCodeSnippet,
       codeSnippet,
       questionsList,
@@ -121,6 +128,8 @@ function AssessmentStudioPage() {
       clipboardAccess,
       screenSnapshot,
       questionStats,
+      networkRestriction,
+      processMonitoring,
       needCodeSnippet,
       codeSnippet,
       questionsList,
@@ -139,6 +148,8 @@ function AssessmentStudioPage() {
     setClipboardAccess(Boolean(draft.clipboardAccess))
     setScreenSnapshot(Boolean(draft.screenSnapshot))
     setQuestionStats(Boolean(draft.questionStats))
+    setNetworkRestriction(Boolean(draft.networkRestriction))
+    setProcessMonitoring(Boolean(draft.processMonitoring))
     setQuestionsList(draft.questionsList || [])
     setNeedCodeSnippet(draft.needCodeSnippet || false)
     setCodeSnippet(draft.codeSnippet || '')
@@ -180,10 +191,13 @@ function AssessmentStudioPage() {
       setMaxGrade(data.assessment.max_grade)
       setDueDate(parseDueDateForInput(data.assessment.due_date))
       setDueTime(parseDueTimeForInput(data.assessment.due_time))
-      setWindowSwitching(data.securitySettings.windowswitching)
-      setClipboardAccess(data.securitySettings.clipboardaccess)
-      setScreenSnapshot(data.securitySettings.screensnapshot)
-      setQuestionStats(data.securitySettings.questionstats)
+      const security = normalizeSecuritySettings(data.securitySettings)
+      setWindowSwitching(security.windowSwitching)
+      setClipboardAccess(security.clipboardAccess)
+      setScreenSnapshot(security.screenSnapshot)
+      setQuestionStats(security.questionStats)
+      setNetworkRestriction(security.networkRestriction)
+      setProcessMonitoring(security.processMonitoring)
       setQuestionsList(
         data.questions.map((question) => ({
           id: question.question_id,
@@ -617,6 +631,8 @@ function AssessmentStudioPage() {
         clipboardAccess,
         screenSnapshot,
         questionStats,
+        networkRestriction,
+        processMonitoring,
       },
       questions: questionsList,
     }
@@ -702,6 +718,8 @@ function AssessmentStudioPage() {
         clipboardAccess,
         screenSnapshot,
         questionStats,
+        networkRestriction,
+        processMonitoring,
       },
       questions: questionsList,
     }
@@ -860,9 +878,12 @@ function AssessmentStudioPage() {
         <div className="security-specifications-form">
           <div className="form-header-text">
             <h3>2. Security settings</h3>
+            <p className="form-help-text">
+              Unchecked options enforce lockdown in the Assessly desktop app.
+            </p>
           </div>
           <div className="form-group">
-            <label htmlFor="window-switching">Window Switching</label>
+            <label htmlFor="window-switching">Allow window switching</label>
             <input
               type="checkbox"
               id="window-switching"
@@ -872,7 +893,7 @@ function AssessmentStudioPage() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="clipboard-access">Clipboard Access</label>
+            <label htmlFor="clipboard-access">Allow clipboard access</label>
             <input
               type="checkbox"
               id="clipboard-access"
@@ -882,7 +903,7 @@ function AssessmentStudioPage() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="screen-snapshot">Screen Snapshot</label>
+            <label htmlFor="screen-snapshot">Allow screen snapshots</label>
             <input
               type="checkbox"
               id="screen-snapshot"
@@ -892,7 +913,27 @@ function AssessmentStudioPage() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="question-stats">Question Stats</label>
+            <label htmlFor="network-restriction">Restrict network to Assessly API</label>
+            <input
+              type="checkbox"
+              id="network-restriction"
+              name="network-restriction"
+              checked={networkRestriction}
+              onChange={(e) => setNetworkRestriction(e.target.checked)}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="process-monitoring">Monitor forbidden applications</label>
+            <input
+              type="checkbox"
+              id="process-monitoring"
+              name="process-monitoring"
+              checked={processMonitoring}
+              onChange={(e) => setProcessMonitoring(e.target.checked)}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="question-stats">Track question stats</label>
             <input
               type="checkbox"
               id="question-stats"

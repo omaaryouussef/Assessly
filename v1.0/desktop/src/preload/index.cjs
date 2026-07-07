@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('assesslyDesktop', {
   isDesktop: true,
@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('assesslyDesktop', {
   startLockdown: (profile) => ipcRenderer.invoke('lockdown:start', profile),
   stopLockdown: () => ipcRenderer.invoke('lockdown:stop'),
   isLockdownActive: () => ipcRenderer.invoke('lockdown:is-active'),
+  enterExamPresentation: () => ipcRenderer.invoke('exam:enter-presentation'),
+  exitExamPresentation: () => ipcRenderer.invoke('exam:exit-presentation'),
   onLockdownViolation: (callback) => {
     const listener = (_event, payload) => callback(payload)
     ipcRenderer.on('lockdown:violation', listener)

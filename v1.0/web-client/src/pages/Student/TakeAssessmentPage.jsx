@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { getApiBase } from '../../config/api'
+import { getApiBase, isDesktopApp } from '../../config/api'
+import { useExamLockdown } from '../../contexts/ExamLockdownContext'
 import Editor from '@monaco-editor/react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../components/auth/AuthWrapper'
+import LockdownViolationModal from '../../components/desktop/LockdownViolationModal'
+import ProctoringConsentModal from '../../components/desktop/ProctoringConsentModal'
+import { useLockdown } from '../../hooks/useLockdown'
+import { normalizeSecuritySettings } from '../../utils/securitySettings'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faClipboardList,
@@ -56,7 +61,39 @@ function QuestionRow({
   handleRunCode,
   codeOutput,
   isRunningCode,
+  clipboardAccess,
 }) {
+  const blockClipboard = !clipboardAccess
+
+  const handleClipboardBlock = (event) => {
+    if (blockClipboard) {
+      event.preventDefault()
+    }
+  }
+
+  const handleEditorMount = (editor, monaco) => {
+    if (!blockClipboard) {
+      return
+    }
+
+    editor.onKeyDown((event) => {
+      const key = event.browserEvent.key.toLowerCase()
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        (key === 'v' || key === 'c' || key === 'x')
+      ) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    })
+
+    editor.addAction({
+      id: `assessly-block-paste-${question.id}`,
+      label: 'Block Paste',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV],
+      run: () => null,
+    })
+  }
   return (
     <div
       className={`question-row question-row--${question.qType.toLowerCase()}`}
@@ -127,6 +164,11 @@ function QuestionRow({
                         [question.id]: { answer: value },
                       }))
                     }
+                    onMount={handleEditorMount}
+                    options={{
+                      minimap: { enabled: false },
+                      contextmenu: clipboardAccess,
+                    }}
                   />
                 </div>
               </div>
@@ -147,6 +189,9 @@ function QuestionRow({
               placeholder="Type your answer here..."
               rows={6}
               value={answers[question.id]?.answer ?? ''}
+              onPaste={handleClipboardBlock}
+              onCopy={handleClipboardBlock}
+              onCut={handleClipboardBlock}
               onChange={(e) =>
                 setAnswers((prev) => ({
                   ...prev,
@@ -202,6 +247,7 @@ function TakeAssessmentPage() {
   const { courseId, assessmentId } = useParams()
   const navigate = useNavigate()
   const { user, token } = useAuth()
+  const { setExamModeActive } = useExamLockdown()
   const studentId = user?.user_id ?? null
   const resolvedAssessmentId =
     assessmentId ?? assessmentFromState?.assessment_id ?? null
@@ -233,6 +279,27 @@ function TakeAssessmentPage() {
   const [clipboardAccess, setClipboardAccess] = useState(false)
   const [screenSnapshot, setScreenSnapshot] = useState(false)
   const [questionStats, setQuestionStats] = useState(false)
+  const [networkRestriction, setNetworkRestriction] = useState(false)
+  const [processMonitoring, setProcessMonitoring] = useState(false)
+  const [requiresDesktop, setRequiresDesktop] = useState(false)
+  const [examStarted, setExamStarted] = useState(false)
+  const [showConsentModal, setShowConsentModal] = useState(false)
+  const [startingLockdown, setStartingLockdown] = useState(false)
+  const [securitySettingsRaw, setSecuritySettingsRaw] = useState(null)
+
+  const {
+    precheckIssues,
+    violation,
+    startLockdown,
+    stopLockdown,
+    clearViolation,
+    normalizedSecurity,
+  } = useLockdown({
+    assessmentId: resolvedAssessmentId,
+    token,
+    securitySettings: securitySettingsRaw,
+    listenForViolations: examStarted && requiresDesktop,
+  })
 
   const [answers, setAnswers] = useState({})
   const [codeOutputs, setCodeOutputs] = useState({})
@@ -361,6 +428,13 @@ function TakeAssessmentPage() {
         clearDraft(resolvedAssessmentId, studentId)
       }
       setShowSuccessModal(true)
+      try {
+        await stopLockdown()
+        setExamModeActive(false)
+      } catch (stopError) {
+        console.error('Failed to end lockdown after submit:', stopError)
+        setExamModeActive(false)
+      }
     } catch (error) {
       submittedRef.current = false
       console.error('Failed to submit assessment', error)
@@ -368,7 +442,7 @@ function TakeAssessmentPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [answers, questionsList, resolvedAssessmentId, studentId, token])
+  }, [answers, questionsList, resolvedAssessmentId, setExamModeActive, studentId, stopLockdown, token])
 
   useEffect(() => {
     if (!resolvedAssessmentId || !token) return
@@ -463,10 +537,17 @@ function TakeAssessmentPage() {
           data.questions.filter((question) => question.question_type === 'MCQ')
             .length
         )
-        setWindowSwitching(data.securitySettings.windowswitching)
-        setClipboardAccess(data.securitySettings.clipboardaccess)
-        setScreenSnapshot(data.securitySettings.screensnapshot)
-        setQuestionStats(data.securitySettings.questionstats)
+        const security = normalizeSecuritySettings(data.securitySettings)
+        setSecuritySettingsRaw(data.securitySettings)
+        setWindowSwitching(security.windowSwitching)
+        setClipboardAccess(security.clipboardAccess)
+        setScreenSnapshot(security.screenSnapshot)
+        setQuestionStats(security.questionStats)
+        setNetworkRestriction(security.networkRestriction)
+        setProcessMonitoring(security.processMonitoring)
+        setRequiresDesktop(Boolean(data.requiresDesktop))
+        setExamStarted(!data.requiresDesktop)
+        setShowConsentModal(Boolean(data.requiresDesktop))
         setAssessmentErr('')
         setAssessmentLoaded(true)
         setDraftResolved(true)
@@ -524,6 +605,41 @@ function TakeAssessmentPage() {
     void handleSubmit()
   }, [assessmentLoaded, isTimedAssessment, isTimeUp, handleSubmit])
 
+  const handleAcceptConsent = async () => {
+    setStartingLockdown(true)
+    setAssessmentErr('')
+
+    const result = await startLockdown()
+    setStartingLockdown(false)
+
+    if (!result.ok) {
+      setAssessmentErr(
+        result.issues?.[0]?.message ||
+          'Lockdown environment check failed. Resolve the issues and try again.'
+      )
+      return
+    }
+
+    setShowConsentModal(false)
+    setExamStarted(true)
+  }
+
+  useEffect(() => {
+    if (!examStarted) {
+      return undefined
+    }
+
+    setExamModeActive(true)
+
+    return () => {
+      setExamModeActive(false)
+    }
+  }, [examStarted, setExamModeActive])
+
+  const handleCancelConsent = () => {
+    navigate(getAssessmentListPath(courseId, type))
+  }
+
   if (!resolvedAssessmentId) {
     return (
       <div className="take-assessment-page">
@@ -541,15 +657,29 @@ function TakeAssessmentPage() {
   const dueDateLabel = formatDueDate(dueDate)
   const dueTimeLabel = formatDueTime(dueTime)
 
-  const handleGoToListPage = () => {
+  const handleGoToListPage = async () => {
+    await stopLockdown()
+    setExamModeActive(false)
+    setExamStarted(false)
     navigate(getAssessmentListPath(courseId, type))
     setShowSuccessModal(false)
   }
 
   const assessmentTypeLabel = getAssessmentTypeLabel(type)
 
+  if (requiresDesktop && !isDesktopApp()) {
+    return (
+      <div className="take-assessment-page">
+        <p className="take-assessment-error">
+          This assessment requires the Assessly desktop app for proctoring. Install
+          the desktop app and open this assessment there.
+        </p>
+      </div>
+    )
+  }
+
   return (
-    <div className="take-assessment-page">
+    <div className={`take-assessment-page${examStarted ? ' take-assessment-page--exam-mode' : ''}`}>
       <div className="course-special-header take-assessment-header">
         <FontAwesomeIcon icon={faClipboardList} />
         <span> / </span>
@@ -635,6 +765,20 @@ function TakeAssessmentPage() {
                 >
                   Question stats {questionStats ? 'tracked' : 'not tracked'}
                 </li>
+                <li
+                  className={`assessment-detail-item${
+                    networkRestriction ? '' : ' assessment-detail-item--off'
+                  }`}
+                >
+                  Network restriction {networkRestriction ? 'enabled' : 'disabled'}
+                </li>
+                <li
+                  className={`assessment-detail-item${
+                    processMonitoring ? '' : ' assessment-detail-item--off'
+                  }`}
+                >
+                  Process monitoring {processMonitoring ? 'enabled' : 'disabled'}
+                </li>
               </ul>
             </section>
 
@@ -668,6 +812,11 @@ function TakeAssessmentPage() {
           <div className="assessment-questions-header">
             <h3>Questions</h3>
           </div>
+          {!examStarted ? (
+            <p className="assessment-questions-empty">
+              Accept the proctoring disclosure to begin this assessment.
+            </p>
+          ) : (
           <div className="assessment-questions-body">
             {questionsList.length > 0 ? (
               <QuestionRow
@@ -682,6 +831,7 @@ function TakeAssessmentPage() {
                 isRunningCode={
                   runningQuestionId === questionsList[currentQuestionIndex]?.id
                 }
+                clipboardAccess={clipboardAccess}
               />
             ) : (
               <p className="assessment-questions-empty">No questions found</p>
@@ -726,8 +876,42 @@ function TakeAssessmentPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
+
+      {showConsentModal && normalizedSecurity && (
+        <ProctoringConsentModal
+          securitySettings={normalizedSecurity}
+          onAccept={handleAcceptConsent}
+          onCancel={handleCancelConsent}
+        />
+      )}
+
+      {precheckIssues.length > 0 && (
+        <div className="success-modal-backdrop">
+          <div className="success-modal lockdown-precheck-modal">
+            <h3>Lockdown setup required</h3>
+            <ul className="proctoring-consent-list">
+              {precheckIssues.map((issue) => (
+                <li key={issue.code}>{issue.message}</li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="success-modal-btn"
+              onClick={handleCancelConsent}
+            >
+              Go back
+            </button>
+          </div>
+        </div>
+      )}
+
+      <LockdownViolationModal
+        violation={violation}
+        onDismiss={clearViolation}
+      />
 
       {showSuccessModal && (
         <div className="success-modal-backdrop">

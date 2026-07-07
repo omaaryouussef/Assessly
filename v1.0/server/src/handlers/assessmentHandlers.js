@@ -1,4 +1,8 @@
 import db from "../../db/index.js";
+import {
+  assessmentRequiresDesktop,
+  normalizeSecuritySettings,
+} from "../utils/securitySettings.js";
 
 const TIMED_ASSESSMENT_TYPES = new Set(["QUIZ", "EXAM"]);
 
@@ -566,12 +570,16 @@ export const createAssessment = async (req, res) => {
       }
     }
     await db.query(
-      "INSERT INTO security_settings (windowswitching, clipboardaccess, screensnapshot, questionstats, assessment_id) VALUES ($1, $2, $3, $4, $5)",
+      `INSERT INTO security_settings
+        (windowswitching, clipboardaccess, screensnapshot, questionstats, networkrestriction, processmonitoring, assessment_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         securitySettings.windowSwitching,
         securitySettings.clipboardAccess,
         securitySettings.screenSnapshot,
         securitySettings.questionStats,
+        securitySettings.networkRestriction ?? false,
+        securitySettings.processMonitoring ?? false,
         assessmentId,
       ],
     );
@@ -710,12 +718,21 @@ export const updateAssessment = async (req, res) => {
     }
 
     await db.query(
-      "UPDATE security_settings SET windowswitching = $1, clipboardaccess = $2, screensnapshot = $3, questionstats = $4 WHERE assessment_id = $5",
+      `UPDATE security_settings
+       SET windowswitching = $1,
+           clipboardaccess = $2,
+           screensnapshot = $3,
+           questionstats = $4,
+           networkrestriction = $5,
+           processmonitoring = $6
+       WHERE assessment_id = $7`,
       [
         securitySettings.windowSwitching,
         securitySettings.clipboardAccess,
         securitySettings.screenSnapshot,
         securitySettings.questionStats,
+        securitySettings.networkRestriction ?? false,
+        securitySettings.processMonitoring ?? false,
         newAssessmentId,
       ],
     );
@@ -766,9 +783,14 @@ export const getAssessmentById = async (req, res) => {
       }),
     );
 
+    const securityRow = securitySettings.rows[0] ?? null;
+    const normalizedSecuritySettings = normalizeSecuritySettings(securityRow);
+
     return res.status(200).json({
       assessment: row,
-      securitySettings: securitySettings.rows[0],
+      securitySettings: securityRow,
+      normalizedSecuritySettings,
+      requiresDesktop: assessmentRequiresDesktop(securityRow),
       questions: questionsTemplate,
     });
   } catch (error) {

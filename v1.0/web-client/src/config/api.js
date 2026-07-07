@@ -4,7 +4,27 @@ const envBase =
 let resolvedBase = envBase
 
 export function isDesktopApp() {
-  return typeof window !== 'undefined' && Boolean(window.assesslyDesktop?.isDesktop)
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  if (window.assesslyDesktop?.isDesktop) {
+    return true
+  }
+
+  // Fallback when preload bridge is delayed or unavailable in the shell.
+  return (
+    typeof navigator !== 'undefined' &&
+    /Electron/i.test(navigator.userAgent)
+  )
+}
+
+export function getDesktopBridge() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  return window.assesslyDesktop ?? null
 }
 
 export async function initApiBase() {
@@ -12,7 +32,12 @@ export async function initApiBase() {
     return resolvedBase
   }
 
-  const url = await window.assesslyDesktop.getApiBaseUrl()
+  const bridge = getDesktopBridge()
+  if (!bridge?.getApiBaseUrl) {
+    return resolvedBase
+  }
+
+  const url = await bridge.getApiBaseUrl()
   if (url) {
     resolvedBase = url
   }

@@ -9,6 +9,41 @@
   background-color: #F8FAFC ;
 }
 
+.app-content--exam {
+  margin-left: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 0;
+  overflow: hidden;
+  background-color: #f8fafc;
+}
+
+.app-content--exam .app-main-body {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+html[data-exam-mode='true'] .app-content--exam .app-main-body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html[data-exam-mode='true'] .app-content--exam .app-main-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+html[data-exam-mode='true'] .logo,
+html[data-exam-mode='true'] .navbar-container,
+html[data-exam-mode='true'] .sidebar-container,
+html[data-exam-mode='true'] .sidebar-expand-button {
+  display: none !important;
+}
+
 .app-main-body {
   flex: 1;
 }

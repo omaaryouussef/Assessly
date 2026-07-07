@@ -4,7 +4,9 @@ import { RouterProvider } from 'react-router-dom'
 import AuthWrapper from './components/auth/AuthWrapper'
 import DesktopSetupScreen from './components/desktop/DesktopSetupScreen'
 import { CourseWrapper } from '../contexts/CourseContext'
+import { ExamLockdownProvider } from './contexts/ExamLockdownContext'
 import { hasApiBase, initApiBase, isDesktopApp } from './config/api'
+import './config/monacoSetup'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import './components/components.css'
 import './pages/pages.css'
@@ -16,7 +18,9 @@ function AppRoot() {
     <StrictMode>
       <AuthWrapper>
         <CourseWrapper>
-          <RouterProvider router={router} />
+          <ExamLockdownProvider>
+            <RouterProvider router={router} />
+          </ExamLockdownProvider>
         </CourseWrapper>
       </AuthWrapper>
     </StrictMode>

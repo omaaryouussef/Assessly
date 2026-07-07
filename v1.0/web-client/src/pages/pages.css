@@ -4196,6 +4196,36 @@
   box-sizing: border-box;
 }
 
+.take-assessment-page--exam-mode {
+  height: 100%;
+  min-height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+html[data-exam-mode='true'] .take-assessment-page--exam-mode {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html[data-exam-mode='true'] .take-assessment-page--exam-mode::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+html[data-exam-mode='true'] .take-assessment-page--exam-mode .take-assessment-body {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-exam-mode='true'] body,
+html[data-exam-mode='true'] #root {
+  height: 100vh;
+  overflow: hidden;
+}
+
 .take-assessment-header {
   justify-content: flex-start;
 }
@@ -4839,6 +4869,7 @@
 
 .take-assessment-page .coding-workspace-panel--editor .coding-workspace-panel-body {
   background: #1e1e1e;
+  min-height: 200px;
 }
 
 .take-assessment-page .coding-output-box {
@@ -5931,4 +5962,91 @@
     width: 100%;
     text-align: left;
   }
+}
+
+.desktop-settings {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  max-width: 640px;
+}
+
+.desktop-settings__local {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.desktop-settings__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.desktop-settings__message {
+  color: #166534;
+}
+
+.desktop-settings__error {
+  color: #b91c1c;
+}
+
+.proctoring-consent-list {
+  margin: 1rem 0;
+  padding-left: 1.25rem;
+}
+
+.proctoring-consent-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.proctoring-events-panel {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.proctoring-events-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.proctoring-event-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.proctoring-event-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.proctoring-event-severity--warning {
+  color: #b45309;
+}
+
+.proctoring-event-severity--critical {
+  color: #b91c1c;
+}
+
+.proctoring-event-metadata {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  background: #f9fafb;
+  padding: 0.5rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.form-help-text {
+  margin: 0.25rem 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
 }
