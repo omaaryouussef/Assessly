@@ -219,8 +219,8 @@ function AssessmentStudioPage() {
           options: question.options || [],
           codeSnippet: question.code_snippet || '',
           needCodeSnippet: question.code_snippet ? true : false,
-          timeLimit: question.time_limit ?? 0,
-          memoryLimit: question.memory_limit ?? 0,
+          timeLimit: question.time_limit_sec ?? 0,
+          memoryLimit: question.memory_limit_bytes ? question.memory_limit_bytes / 1024 / 1024 : 0,
         }))
       )
       setEditingAssessment({ assessment_id: assessmentId })
@@ -1081,6 +1081,16 @@ function AssessmentStudioPage() {
                                 {question.langVersion}
                               </span>
                             </p>
+                            <div className="question-row-limits">
+                              <div className="question-row-limit question-row-limit--time">
+                                <strong>Time Limit</strong>
+                                <p>{question.timeLimit} seconds</p>
+                              </div>
+                              <div className="question-row-limit question-row-limit--memory">
+                                <strong>Memory Limit</strong>
+                                <p>{question.memoryLimit} MB</p>
+                              </div>
+                            </div>
                           </>
                         )}
                         {question.qType === 'MCQ' &&

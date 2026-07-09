@@ -5,6 +5,52 @@ import {
 } from "../utils/securitySettings.js";
 
 const TIMED_ASSESSMENT_TYPES = new Set(["QUIZ", "EXAM"]);
+const MAX_INT32 = 2147483647;
+const BYTES_PER_MB = 1024 * 1024;
+
+function normalizeQuestionLimits(question) {
+  const timeRaw = question.timeLimit;
+  const memoryRaw = question.memoryLimit;
+
+  const timeLimitSec =
+    timeRaw === undefined || timeRaw === null || timeRaw === ""
+      ? null
+      : Number(timeRaw);
+  const memoryLimitMb =
+    memoryRaw === undefined || memoryRaw === null || memoryRaw === ""
+      ? null
+      : Number(memoryRaw);
+
+  if (
+    timeLimitSec !== null &&
+    (!Number.isInteger(timeLimitSec) || timeLimitSec < 0 || timeLimitSec > MAX_INT32)
+  ) {
+    return {
+      error:
+        "Time limit must be a whole number of seconds between 0 and 2147483647.",
+    };
+  }
+
+  if (
+    memoryLimitMb !== null &&
+    (!Number.isInteger(memoryLimitMb) || memoryLimitMb < 0)
+  ) {
+    return {
+      error: "Memory limit must be a whole number of megabytes (0 or more).",
+    };
+  }
+
+  const memoryLimitBytes =
+    memoryLimitMb === null ? null : memoryLimitMb * BYTES_PER_MB;
+
+  if (memoryLimitBytes !== null && memoryLimitBytes > MAX_INT32) {
+    return {
+      error: "Memory limit is too large. Maximum supported value is 2047 MB.",
+    };
+  }
+
+  return { timeLimitSec, memoryLimitBytes };
+}
 
 async function canManageCourse(courseId, userId, role) {
   if (role === "INSTRUCTOR") {
@@ -546,8 +592,13 @@ export const createAssessment = async (req, res) => {
     );
     const assessmentId = assessment.rows[0].assessment_id;
     for (const question of questions) {
+      const normalizedLimits = normalizeQuestionLimits(question);
+      if (normalizedLimits.error) {
+        return res.status(400).json({ error: normalizedLimits.error });
+      }
+
       const questionsResult = await db.query(
-        "INSERT INTO question (question_type, prompt, max_grade, prog_lang, lang_version, num_choices, code_snippet, assessment_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+        "INSERT INTO question (question_type, prompt, max_grade, prog_lang, lang_version, num_choices, code_snippet, time_limit_sec, memory_limit_bytes, assessment_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *",
         [
           question.qType,
           question.qPrompt,
@@ -556,6 +607,8 @@ export const createAssessment = async (req, res) => {
           question.langVersion || "",
           question.options.length,
           question.codeSnippet || null,
+          normalizedLimits.timeLimitSec,
+          normalizedLimits.memoryLimitBytes,
           assessmentId,
         ],
       );
@@ -662,11 +715,16 @@ export const updateAssessment = async (req, res) => {
       const isExistingQuestion =
         isDbQuestionId(question.id) && existingQuestionIds.has(questionId);
 
+      const normalizedLimits = normalizeQuestionLimits(question);
+      if (normalizedLimits.error) {
+        return res.status(400).json({ error: normalizedLimits.error });
+      }
+
       let savedQuestionId;
 
       if (isExistingQuestion) {
         const questionsResult = await db.query(
-          "UPDATE question SET question_type = $1, prompt = $2, max_grade = $3, prog_lang = $4, lang_version = $5, num_choices = $6, code_snippet = $7 WHERE question_id = $8 AND assessment_id = $9 RETURNING question_id",
+          "UPDATE question SET question_type = $1, prompt = $2, max_grade = $3, prog_lang = $4, lang_version = $5, num_choices = $6, code_snippet = $7, time_limit_sec = $8, memory_limit_bytes = $9 WHERE question_id = $10 AND assessment_id = $11 RETURNING question_id",
           [
             question.qType,
             question.qPrompt,
@@ -675,6 +733,8 @@ export const updateAssessment = async (req, res) => {
             question.langVersion || "",
             (question.options || []).length,
             question.codeSnippet || null,
+            normalizedLimits.timeLimitSec,
+            normalizedLimits.memoryLimitBytes,
             questionId,
             assessmentId,
           ],
@@ -687,7 +747,7 @@ export const updateAssessment = async (req, res) => {
         savedQuestionId = questionsResult.rows[0].question_id;
       } else {
         const questionsResult = await db.query(
-          "INSERT INTO question (question_type, prompt, max_grade, prog_lang, lang_version, num_choices, code_snippet, assessment_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING question_id",
+          "INSERT INTO question (question_type, prompt, max_grade, prog_lang, lang_version, num_choices, code_snippet, time_limit_sec, memory_limit_bytes, assessment_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING question_id",
           [
             question.qType,
             question.qPrompt,
@@ -696,6 +756,8 @@ export const updateAssessment = async (req, res) => {
             question.langVersion || "",
             (question.options || []).length,
             question.codeSnippet || null,
+            normalizedLimits.timeLimitSec,
+            normalizedLimits.memoryLimitBytes,
             assessmentId,
           ],
         );
