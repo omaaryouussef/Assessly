@@ -65,6 +65,8 @@ function AssessmentStudioPage() {
   const [langVersion, setLangVersion] = useState('')
   const [needCodeSnippet, setNeedCodeSnippet] = useState(false)
   const [codeSnippet, setCodeSnippet] = useState('')
+  const [timeLimit, setTimeLimit] = useState(0)
+  const [memoryLimit, setMemoryLimit] = useState(0)
   const [questionsList, setQuestionsList] = useState([])
 
   const [questionErr, setQuestionErr] = useState('')
@@ -114,6 +116,8 @@ function AssessmentStudioPage() {
       processMonitoring,
       needCodeSnippet,
       codeSnippet,
+      timeLimit,
+      memoryLimit,
       questionsList,
       editingAssessmentId: editingAssessment?.assessment_id ?? null,
     }),
@@ -132,6 +136,8 @@ function AssessmentStudioPage() {
       processMonitoring,
       needCodeSnippet,
       codeSnippet,
+      timeLimit,
+      memoryLimit,
       questionsList,
       editingAssessment,
     ]
@@ -151,6 +157,8 @@ function AssessmentStudioPage() {
     setNetworkRestriction(Boolean(draft.networkRestriction))
     setProcessMonitoring(Boolean(draft.processMonitoring))
     setQuestionsList(draft.questionsList || [])
+    setTimeLimit(draft.timeLimit ?? 0)
+    setMemoryLimit(draft.memoryLimit ?? 0)
     setNeedCodeSnippet(draft.needCodeSnippet || false)
     setCodeSnippet(draft.codeSnippet || '')
     setEditingAssessment(
@@ -163,6 +171,8 @@ function AssessmentStudioPage() {
     setQPrompt('')
     setQMaxGrade(0)
     setprogLang('')
+    setTimeLimit(0)
+    setMemoryLimit(0)
     setNeedCodeSnippet(false)
     setLangVersion('')
     setOptions([])
@@ -209,6 +219,8 @@ function AssessmentStudioPage() {
           options: question.options || [],
           codeSnippet: question.code_snippet || '',
           needCodeSnippet: question.code_snippet ? true : false,
+          timeLimit: question.time_limit ?? 0,
+          memoryLimit: question.memory_limit ?? 0,
         }))
       )
       setEditingAssessment({ assessment_id: assessmentId })
@@ -340,6 +352,9 @@ function AssessmentStudioPage() {
     } else if (qType === 'MCQ' && options.length === 0) {
       setQuestionErr('At least one option is required for MCQ')
       return
+    } else if (needCodeSnippet && !codeSnippet) {
+      setQuestionErr('Code snippet is required when checked')
+      return
     } else if (qType === 'CODING' && !progLang) {
       setQuestionErr('Programming language is required for coding')
       return
@@ -354,6 +369,8 @@ function AssessmentStudioPage() {
       langVersion,
       options: [...options],
       codeSnippet: needCodeSnippet ? codeSnippet : null,
+      timeLimit: timeLimit ?? 0,
+      memoryLimit: memoryLimit ?? 0,
     }
 
     if (activeQuestionForm && activeQuestionForm !== 'new') {
@@ -382,6 +399,8 @@ function AssessmentStudioPage() {
     setNeedCodeSnippet(question.codeSnippet ? true : false)
     setCodeSnippet(question.codeSnippet || '')
     setOptions([...(question.options || [])])
+    setTimeLimit(question.timeLimit ?? 0)
+    setMemoryLimit(question.memoryLimit ?? 0)
     setQuestionErr('')
   }
 
@@ -403,6 +422,8 @@ function AssessmentStudioPage() {
     setCodeSnippet('')
     setOptions([])
     setQuestionErr('')
+    setTimeLimit(0)
+    setMemoryLimit(0)
   }
 
   const openNewQuestionForm = () => {
@@ -416,6 +437,8 @@ function AssessmentStudioPage() {
     setCodeSnippet('')
     setOptions([])
     setQuestionErr('')
+    setTimeLimit(0)
+    setMemoryLimit(0)
   }
 
   const renderQuestionEditor = (idPrefix) => (
@@ -518,6 +541,33 @@ function AssessmentStudioPage() {
             <option value="cpp 10.2.0">C++ 10.2.0</option>
             <option value="python 3.12.0">Python 3.12.0</option>
           </select>
+
+          <div className="coding-limits-row">
+            <div className="form-group form-group--time-limit">
+              <label htmlFor={`${idPrefix}-question-time-limit`}>
+                Time Limit (seconds)
+              </label>
+              <input
+                type="number"
+                id={`${idPrefix}-question-time-limit`}
+                name={`${idPrefix}-question-time-limit`}
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(e.target.value)}
+              />
+            </div>
+            <div className="form-group form-group--memory-limit">
+              <label htmlFor={`${idPrefix}-question-memory-limit`}>
+                Memory Limit (megabytes)
+              </label>
+              <input
+                type="number"
+                id={`${idPrefix}-question-memory-limit`}
+                name={`${idPrefix}-question-memory-limit`}
+                value={memoryLimit}
+                onChange={(e) => setMemoryLimit(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
       )}
       {qType === 'MCQ' && (
@@ -638,14 +688,17 @@ function AssessmentStudioPage() {
     }
 
     try {
-      const response = await fetch(`${getApiBase()}/api/assessments/${courseId}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(assessmentPayload),
-      })
+      const response = await fetch(
+        `${getApiBase()}/api/assessments/${courseId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(assessmentPayload),
+        }
+      )
       const data = await response.json()
       if (!response.ok)
         throw new Error(data.error || 'Failed to create assessment')
@@ -913,7 +966,9 @@ function AssessmentStudioPage() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="network-restriction">Restrict network to Assessly API</label>
+            <label htmlFor="network-restriction">
+              Restrict network to Assessly API
+            </label>
             <input
               type="checkbox"
               id="network-restriction"
@@ -923,7 +978,9 @@ function AssessmentStudioPage() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="process-monitoring">Monitor forbidden applications</label>
+            <label htmlFor="process-monitoring">
+              Monitor forbidden applications
+            </label>
             <input
               type="checkbox"
               id="process-monitoring"

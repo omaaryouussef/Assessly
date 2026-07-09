@@ -3060,11 +3060,20 @@
 
 .assessment-studio-form .form-group--prog-lang {
   grid-column: 1 / -1;
-  max-width: 360px;
+  width: 100%;
+  max-width: 760px;
 }
 
 .assessment-studio-form .form-group--prog-lang label {
   color: #2563eb;
+}
+
+.assessment-studio-form .form-group--prog-lang .coding-limits-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+  width: 100%;
 }
 
 .assessment-studio-form .prog-lang-select {
@@ -6417,6 +6426,10 @@ html[data-exam-mode='true'] #root {
 
   .schedule-page .schedule-calendar .react-calendar__navigation__label {
     font-size: 16px;
+  }
+
+  .assessment-studio-form .form-group--prog-lang .coding-limits-row {
+    grid-template-columns: 1fr;
   }
 }
 
