@@ -133,6 +133,31 @@ function hasQuestionThreadActivity(questionFeedback, viewerUserId) {
   return hasOwnOpen || getThreadComments(questionFeedback, viewerUserId).length > 0
 }
 
+function FeedbackQuestionLimits({ timeLimit, memoryLimit }) {
+  if (timeLimit == null && memoryLimit == null) return null
+
+  return (
+    <div className="feedback-question-limits">
+      {timeLimit != null && (
+        <div className="feedback-question-limit feedback-question-limit--time">
+          <span className="feedback-question-limit-label">Time limit</span>
+          <span className="feedback-question-limit-value">
+            {timeLimit} seconds
+          </span>
+        </div>
+      )}
+      {memoryLimit != null && (
+        <div className="feedback-question-limit feedback-question-limit--memory">
+          <span className="feedback-question-limit-label">Memory limit</span>
+          <span className="feedback-question-limit-value">
+            {memoryLimit} MB
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StudentAnswerDisplay({ question, answer }) {
   const answerText = answer?.answer ?? ''
 
@@ -475,6 +500,13 @@ function FeedbackQuestionCard({
 
       <p className="feedback-question-prompt">{question.qPrompt}</p>
 
+      {question.qType === 'CODING' && (
+        <FeedbackQuestionLimits
+          timeLimit={question.timeLimit}
+          memoryLimit={question.memoryLimit}
+        />
+      )}
+
       {question.codeSnippet && (
         <div className="feedback-question-code-snippet">
           <div className="feedback-question-code-snippet-header">
@@ -651,6 +683,10 @@ function AssessmentFeedbackPage() {
           progLang: question.prog_lang,
           codeSnippet: question.code_snippet || null,
           options: question.options || [],
+          timeLimit: question.time_limit_sec || null,
+          memoryLimit: question.memory_limit_bytes
+            ? question.memory_limit_bytes / 1024 / 1024
+            : null,
         }))
 
         const initialGrades = {}

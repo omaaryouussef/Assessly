@@ -148,9 +148,27 @@ FOREIGN KEY (student_question_answer_id) REFERENCES student_question_answer(id) 
 
 CREATE TABLE Proctoring_Event (
     id SERIAL PRIMARY KEY,
-    student_assessment_id INT NOT NULL REFERENCES student_assessment(id),
+    student_assessment_id INT NOT NULL REFERENCES student_assessment(id) ON DELETE CASCADE,
     event_type VARCHAR(50) NOT NULL,  
     severity VARCHAR(20) NOT NULL,   
     metadata JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE OR REPLACE FUNCTION cascade_student_assessment_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+  DELETE FROM student_question_answer sqa
+  USING question q
+  WHERE sqa.question_id = q.question_id
+    AND q.assessment_id = OLD.assessment_id
+    AND sqa.student_id = OLD.student_id;
+
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_cascade_student_assessment_delete
+BEFORE DELETE ON student_assessment
+FOR EACH ROW
+EXECUTE FUNCTION cascade_student_assessment_delete();

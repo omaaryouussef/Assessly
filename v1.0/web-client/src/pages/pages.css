@@ -5538,6 +5538,57 @@ html[data-exam-mode='true'] #root {
   color: var(--bold-text-color);
 }
 
+.feedback-question-limits {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 360px;
+  margin: -8px 0 16px;
+}
+
+.feedback-question-limit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.feedback-question-limit-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.feedback-question-limit-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.feedback-question-limit--time {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.feedback-question-limit--time .feedback-question-limit-value {
+  color: #1d4ed8;
+}
+
+.feedback-question-limit--memory {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+}
+
+.feedback-question-limit--memory .feedback-question-limit-value {
+  color: #6d28d9;
+}
+
 .feedback-question-code-snippet {
   display: flex;
   flex-direction: column;
