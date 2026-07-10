@@ -24,7 +24,12 @@ import {
   formatSubmissionTime,
 } from '../../utils/assessmentDue'
 
-import { isDraftEmpty, loadDraft, saveDraft, clearDraft } from '../../utils/takeAssessmentDraft'
+import {
+  isDraftEmpty,
+  loadDraft,
+  saveDraft,
+  clearDraft,
+} from '../../utils/takeAssessmentDraft'
 
 function getAssessmentListPath(courseId, assessType) {
   if (assessType === 'ASSIGNMENT') {
@@ -128,10 +133,37 @@ function QuestionRow({
           <div className="question-answer-block question-answer-block--coding">
             <div className="coding-workspace-toolbar">
               <div className="coding-workspace-meta">
-                <span className="question-answer-label">
-                  Programming language
-                </span>
-                <p className="question-answer-meta">{question.progLang}</p>
+                <div className="coding-workspace-meta-lang">
+                  <span className="question-answer-label">
+                    Programming language
+                  </span>
+                  <p className="question-answer-meta">{question.progLang}</p>
+                </div>
+                {(question.timeLimit != null ||
+                  question.memoryLimit != null) && (
+                  <div className="take-assessment-limits">
+                    {question.timeLimit != null && (
+                      <div className="take-assessment-limit take-assessment-limit--time">
+                        <span className="take-assessment-limit-label">
+                          Time limit
+                        </span>
+                        <span className="take-assessment-limit-value">
+                          {question.timeLimit} seconds
+                        </span>
+                      </div>
+                    )}
+                    {question.memoryLimit != null && (
+                      <div className="take-assessment-limit take-assessment-limit--memory">
+                        <span className="take-assessment-limit-label">
+                          Memory limit
+                        </span>
+                        <span className="take-assessment-limit-value">
+                          {question.memoryLimit} MB
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <button
                 type="button"
@@ -335,12 +367,7 @@ function TakeAssessmentPage() {
     if (!isDraftEmpty(snapshot)) {
       saveDraft(resolvedAssessmentId, studentId, snapshot)
     }
-  }, [
-    buildDraftSnapshot,
-    draftResolved,
-    resolvedAssessmentId,
-    studentId,
-  ])
+  }, [buildDraftSnapshot, draftResolved, resolvedAssessmentId, studentId])
 
   const handleRunCode = useCallback(
     async (questionId, code, progLang, progVersion) => {
@@ -442,7 +469,15 @@ function TakeAssessmentPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [answers, questionsList, resolvedAssessmentId, setExamModeActive, studentId, stopLockdown, token])
+  }, [
+    answers,
+    questionsList,
+    resolvedAssessmentId,
+    setExamModeActive,
+    studentId,
+    stopLockdown,
+    token,
+  ])
 
   useEffect(() => {
     if (!resolvedAssessmentId || !token) return
@@ -450,8 +485,9 @@ function TakeAssessmentPage() {
     let cancelled = false
 
     const fetchAssessment = async () => {
-      const draft =
-        studentId ? loadDraft(resolvedAssessmentId, studentId) : null
+      const draft = studentId
+        ? loadDraft(resolvedAssessmentId, studentId)
+        : null
 
       try {
         const response = await fetch(
@@ -521,6 +557,10 @@ function TakeAssessmentPage() {
             langVersion: question.lang_version,
             options: question.options || [],
             codeSnippet: question.code_snippet || null,
+            timeLimit: question.time_limit_sec || null,
+            memoryLimit: question.memory_limit_bytes
+              ? question.memory_limit_bytes / 1024 / 1024
+              : null,
           }))
         )
         setCodingQuestions(
@@ -671,15 +711,17 @@ function TakeAssessmentPage() {
     return (
       <div className="take-assessment-page">
         <p className="take-assessment-error">
-          This assessment requires the Assessly desktop app for proctoring. Install
-          the desktop app and open this assessment there.
+          This assessment requires the Assessly desktop app for proctoring.
+          Install the desktop app and open this assessment there.
         </p>
       </div>
     )
   }
 
   return (
-    <div className={`take-assessment-page${examStarted ? ' take-assessment-page--exam-mode' : ''}`}>
+    <div
+      className={`take-assessment-page${examStarted ? ' take-assessment-page--exam-mode' : ''}`}
+    >
       <div className="course-special-header take-assessment-header">
         <FontAwesomeIcon icon={faClipboardList} />
         <span> / </span>
@@ -770,14 +812,16 @@ function TakeAssessmentPage() {
                     networkRestriction ? '' : ' assessment-detail-item--off'
                   }`}
                 >
-                  Network restriction {networkRestriction ? 'enabled' : 'disabled'}
+                  Network restriction{' '}
+                  {networkRestriction ? 'enabled' : 'disabled'}
                 </li>
                 <li
                   className={`assessment-detail-item${
                     processMonitoring ? '' : ' assessment-detail-item--off'
                   }`}
                 >
-                  Process monitoring {processMonitoring ? 'enabled' : 'disabled'}
+                  Process monitoring{' '}
+                  {processMonitoring ? 'enabled' : 'disabled'}
                 </li>
               </ul>
             </section>
@@ -817,65 +861,66 @@ function TakeAssessmentPage() {
               Accept the proctoring disclosure to begin this assessment.
             </p>
           ) : (
-          <div className="assessment-questions-body">
-            {questionsList.length > 0 ? (
-              <QuestionRow
-                question={questionsList[currentQuestionIndex]}
-                currentQuestionIndex={currentQuestionIndex}
-                answers={answers}
-                setAnswers={setAnswers}
-                handleRunCode={handleRunCode}
-                codeOutput={
-                  codeOutputs[questionsList[currentQuestionIndex]?.id]
-                }
-                isRunningCode={
-                  runningQuestionId === questionsList[currentQuestionIndex]?.id
-                }
-                clipboardAccess={clipboardAccess}
-              />
-            ) : (
-              <p className="assessment-questions-empty">No questions found</p>
-            )}
-            <div className="assessment-questions-nav">
-              <span className="assessment-questions-progress">
-                Question{' '}
-                {questionsList.length > 0 ? currentQuestionIndex + 1 : 0} of{' '}
-                {questionsList.length}
-              </span>
-              <div className="assessment-questions-actions">
-                <button
-                  type="button"
-                  className="assessment-questions-button assessment-questions-button--secondary"
-                  onClick={() =>
-                    setCurrentQuestionIndex(currentQuestionIndex - 1)
+            <div className="assessment-questions-body">
+              {questionsList.length > 0 ? (
+                <QuestionRow
+                  question={questionsList[currentQuestionIndex]}
+                  currentQuestionIndex={currentQuestionIndex}
+                  answers={answers}
+                  setAnswers={setAnswers}
+                  handleRunCode={handleRunCode}
+                  codeOutput={
+                    codeOutputs[questionsList[currentQuestionIndex]?.id]
                   }
-                  disabled={currentQuestionIndex === 0}
-                >
-                  Previous
-                </button>
-                {currentQuestionIndex === questionsList.length - 1 ? (
+                  isRunningCode={
+                    runningQuestionId ===
+                    questionsList[currentQuestionIndex]?.id
+                  }
+                  clipboardAccess={clipboardAccess}
+                />
+              ) : (
+                <p className="assessment-questions-empty">No questions found</p>
+              )}
+              <div className="assessment-questions-nav">
+                <span className="assessment-questions-progress">
+                  Question{' '}
+                  {questionsList.length > 0 ? currentQuestionIndex + 1 : 0} of{' '}
+                  {questionsList.length}
+                </span>
+                <div className="assessment-questions-actions">
                   <button
                     type="button"
-                    className="assessment-questions-button assessment-questions-button--primary"
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="assessment-questions-button assessment-questions-button--primary"
+                    className="assessment-questions-button assessment-questions-button--secondary"
                     onClick={() =>
-                      setCurrentQuestionIndex(currentQuestionIndex + 1)
+                      setCurrentQuestionIndex(currentQuestionIndex - 1)
                     }
+                    disabled={currentQuestionIndex === 0}
                   >
-                    Next
+                    Previous
                   </button>
-                )}
+                  {currentQuestionIndex === questionsList.length - 1 ? (
+                    <button
+                      type="button"
+                      className="assessment-questions-button assessment-questions-button--primary"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="assessment-questions-button assessment-questions-button--primary"
+                      onClick={() =>
+                        setCurrentQuestionIndex(currentQuestionIndex + 1)
+                      }
+                    >
+                      Next
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
           )}
         </div>
       </div>

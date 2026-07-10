@@ -2319,7 +2319,9 @@
   box-shadow: 1px 0 0 #eef2f6;
 }
 
-.instructor-grades-table .grades-table-row:hover .instructor-grades-student-cell {
+.instructor-grades-table
+  .grades-table-row:hover
+  .instructor-grades-student-cell {
   background: #f8fafc;
 }
 
@@ -3141,8 +3143,10 @@
   background: #ffffff;
 }
 
-.assessment-studio-form .form-group--code-snippet-toggle:has(.code-snippet-toggle:checked),
-.question-editor .form-group--code-snippet-toggle:has(.code-snippet-toggle:checked) {
+.assessment-studio-form
+  .form-group--code-snippet-toggle:has(.code-snippet-toggle:checked),
+.question-editor
+  .form-group--code-snippet-toggle:has(.code-snippet-toggle:checked) {
   border-color: #93c5fd;
   background: #eff6ff;
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.08);
@@ -4263,12 +4267,15 @@ html[data-exam-mode='true'] .take-assessment-page--exam-mode {
   -ms-overflow-style: none;
 }
 
-html[data-exam-mode='true'] .take-assessment-page--exam-mode::-webkit-scrollbar {
+html[data-exam-mode='true']
+  .take-assessment-page--exam-mode::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
 
-html[data-exam-mode='true'] .take-assessment-page--exam-mode .take-assessment-body {
+html[data-exam-mode='true']
+  .take-assessment-page--exam-mode
+  .take-assessment-body {
   min-width: 0;
   max-width: 100%;
 }
@@ -4307,7 +4314,6 @@ html[data-exam-mode='true'] #root {
   font-size: 13px;
   color: #64748b;
 }
-
 
 .assessment-timer-value {
   font-size: 15px;
@@ -4763,13 +4769,15 @@ html[data-exam-mode='true'] #root {
   height: 10px;
 }
 
-.take-assessment-page .take-assessment-code-snippet-preview::-webkit-scrollbar-thumb {
+.take-assessment-page
+  .take-assessment-code-snippet-preview::-webkit-scrollbar-thumb {
   background: #475569;
   border-radius: 999px;
   border: 2px solid #1e1e1e;
 }
 
-.take-assessment-page .take-assessment-code-snippet-preview::-webkit-scrollbar-track {
+.take-assessment-page
+  .take-assessment-code-snippet-preview::-webkit-scrollbar-track {
   background: #1e1e1e;
 }
 
@@ -4852,7 +4860,64 @@ html[data-exam-mode='true'] #root {
 .take-assessment-page .coding-workspace-meta {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.take-assessment-page .coding-workspace-meta-lang {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.take-assessment-page .take-assessment-limits {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  max-width: 360px;
+}
+
+.take-assessment-page .take-assessment-limit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.take-assessment-page .take-assessment-limit-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.take-assessment-page .take-assessment-limit-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.take-assessment-page .take-assessment-limit--time {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.take-assessment-page .take-assessment-limit--time .take-assessment-limit-value {
+  color: #1d4ed8;
+}
+
+.take-assessment-page .take-assessment-limit--memory {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+}
+
+.take-assessment-page .take-assessment-limit--memory .take-assessment-limit-value {
+  color: #6d28d9;
 }
 
 .take-assessment-page .run-code-button {
@@ -4920,7 +4985,9 @@ html[data-exam-mode='true'] #root {
   min-height: 0;
 }
 
-.take-assessment-page .coding-workspace-panel--editor .coding-workspace-panel-body {
+.take-assessment-page
+  .coding-workspace-panel--editor
+  .coding-workspace-panel-body {
   background: #1e1e1e;
   min-height: 200px;
 }
@@ -4978,7 +5045,9 @@ html[data-exam-mode='true'] #root {
   letter-spacing: 0.02em;
 }
 
-.take-assessment-page .question-row-option:has(input:checked) .question-row-option-marker {
+.take-assessment-page
+  .question-row-option:has(input:checked)
+  .question-row-option-marker {
   background: #c7d2fe;
   color: #4338ca;
 }
@@ -5033,7 +5102,10 @@ html[data-exam-mode='true'] #root {
   overflow-wrap: anywhere;
 }
 
-.take-assessment-page .question-row--mcq .question-row-option:has(input:checked) label {
+.take-assessment-page
+  .question-row--mcq
+  .question-row-option:has(input:checked)
+  label {
   font-weight: 600;
   color: #4338ca;
 }
@@ -5177,6 +5249,16 @@ html[data-exam-mode='true'] #root {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .take-assessment-page .take-assessment-limits {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+
+  .take-assessment-page .coding-workspace-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .assessment-questions-nav {
@@ -6278,8 +6360,14 @@ html[data-exam-mode='true'] #root {
   color: var(--bold-text-color);
 }
 
-.schedule-page .schedule-calendar .react-calendar__navigation button:enabled:hover,
-.schedule-page .schedule-calendar .react-calendar__navigation button:enabled:focus {
+.schedule-page
+  .schedule-calendar
+  .react-calendar__navigation
+  button:enabled:hover,
+.schedule-page
+  .schedule-calendar
+  .react-calendar__navigation
+  button:enabled:focus {
   background-color: #f1f5f9;
 }
 
@@ -6303,7 +6391,9 @@ html[data-exam-mode='true'] #root {
   color: #64748b;
 }
 
-.schedule-page .schedule-calendar .react-calendar__month-view__weekdays__weekday {
+.schedule-page
+  .schedule-calendar
+  .react-calendar__month-view__weekdays__weekday {
   padding: 10px 0;
 }
 
@@ -6388,8 +6478,14 @@ html[data-exam-mode='true'] #root {
 }
 
 .schedule-page .schedule-calendar .react-calendar__tile--active .assignment-dot,
-.schedule-page .schedule-calendar .react-calendar__tile--rangeStart .assignment-dot,
-.schedule-page .schedule-calendar .react-calendar__tile--rangeEnd .assignment-dot {
+.schedule-page
+  .schedule-calendar
+  .react-calendar__tile--rangeStart
+  .assignment-dot,
+.schedule-page
+  .schedule-calendar
+  .react-calendar__tile--rangeEnd
+  .assignment-dot {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.35);
