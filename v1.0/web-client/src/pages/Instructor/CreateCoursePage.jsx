@@ -100,8 +100,8 @@ function CreateCoursePage() {
       </form>
 
       {showSuccessModal && (
-        <div className="create-course-modal-backdrop">
-          <div className="create-course-modal">
+        <div className="create-course-modal-backdrop" onClick={() => setShowSuccessModal(false)}>
+          <div className="create-course-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Course created successfully</h3>
             <p>Your enrollment key:</p>
             <div className="create-course-key">{successKey}</div>
