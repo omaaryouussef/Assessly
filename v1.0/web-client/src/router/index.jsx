@@ -6,6 +6,8 @@ import {
   Route,
   Routes,
 } from 'react-router-dom'
+
+import{ isDesktopApp } from '../config/api.js';
 import ProtectedRoutes from '../components/auth/ProtectedRoutes'
 import RoleGuard from '../components/auth/RoleGuard'
 import App from '../App'
@@ -31,12 +33,15 @@ import TakeAssessmentPage from '../pages/Student/TakeAssessmentPage'
 import ViewGradesPage from '../pages/Student/ViewGradesPage'
 import LoginView from '../pages/auth/LoginView'
 import RegisterView from '../pages/auth/RegisterView'
+import LandingPage from '../pages/LandingPage.jsx'
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
+      {!isDesktopApp() ? <Route path="/landing" element={<LandingPage />} /> : null}
       <Route path="/login" element={<LoginView />} />
       <Route path="/register" element={<RegisterView />} />
+
       <Route path="/" element={<ProtectedRoutes />}>
         <Route path="/" element={<App />}>
           <Route index element={<AllCoursesPage />} />
