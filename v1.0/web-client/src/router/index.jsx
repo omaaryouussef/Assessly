@@ -33,6 +33,8 @@ import TakeAssessmentPage from '../pages/Student/TakeAssessmentPage'
 import ViewGradesPage from '../pages/Student/ViewGradesPage'
 import LoginView from '../pages/auth/LoginView'
 import RegisterView from '../pages/auth/RegisterView'
+import CompleteProfile from '../pages/auth/CompleteProfile'
+import Callback from '../pages/auth/Callback'
 import LandingPage from '../pages/LandingPage.jsx'
 
 const router = createBrowserRouter(
@@ -41,6 +43,8 @@ const router = createBrowserRouter(
       {!isDesktopApp() ? <Route path="/landing" element={<LandingPage />} /> : null}
       <Route path="/login" element={<LoginView />} />
       <Route path="/register" element={<RegisterView />} />
+      <Route path="/complete-profile" element={<CompleteProfile />} />
+      <Route path="/auth/callback" element={<Callback />} />
 
       <Route path="/" element={<ProtectedRoutes />}>
         <Route path="/" element={<App />}>

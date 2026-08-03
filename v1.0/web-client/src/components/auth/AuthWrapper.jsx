@@ -84,14 +84,18 @@ function AuthWrapper({ children }) {
     }
   }
 
-  const register = async (email, password, name, auc_id, role) => {
+  const googleLogin = () => {
+    window.location.assign(`${getApiBase()}/api/users/auth/google`)
+  }
+
+  const register = async (email, password, name, auc_id, role, department) => {
     try {
       const response = await fetch(`${getApiBase()}/api/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, name, auc_id, role }),
+        body: JSON.stringify({ email, password, name, auc_id, role, department }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -112,6 +116,7 @@ function AuthWrapper({ children }) {
       throw error
     }
   }
+
   const logout = () => {
     localStorage.removeItem('user_token')
     setUser(null)
@@ -119,6 +124,80 @@ function AuthWrapper({ children }) {
     setIsAuthenticated(false)
     setLoading(false)
     return
+  }
+
+  const acceptToken = async (incomingToken) => {
+    if (!incomingToken || incomingToken === 'undefined') {
+      throw new Error('Missing auth token')
+    }
+
+    try {
+      localStorage.setItem('user_token', incomingToken)
+      const response = await fetch(`${getApiBase()}/api/users/user`, {
+        headers: {
+          Authorization: `Bearer ${incomingToken}`,
+        },
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to authenticate')
+      }
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      setUser(data)
+      setToken(incomingToken)
+      setIsAuthenticated(true)
+      setLoading(false)
+      return { token: incomingToken, user: data }
+    } catch (error) {
+      localStorage.removeItem('user_token')
+      setUser(null)
+      setToken(null)
+      setIsAuthenticated(false)
+      setLoading(false)
+      throw error
+    }
+  }
+
+  const completeGoogleProfile = async (
+    pendingToken,
+    { auc_id, department }
+  ) => {
+    try {
+      const response = await fetch(
+        `${getApiBase()}/api/users/google/complete-profile`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            pending: pendingToken,
+            auc_id,
+            department,
+          }),
+        }
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to complete profile')
+      }
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      const { token, user } = data
+      localStorage.setItem('user_token', token)
+      setUser(user)
+      setToken(token)
+      setIsAuthenticated(true)
+      setLoading(false)
+      return { token, user }
+    } catch (error) {
+      setLoading(false)
+      throw error
+    }
   }
 
   const value = {
@@ -129,6 +208,9 @@ function AuthWrapper({ children }) {
     login,
     register,
     logout,
+    googleLogin,
+    acceptToken,
+    completeGoogleProfile,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

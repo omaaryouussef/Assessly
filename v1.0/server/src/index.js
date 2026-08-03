@@ -1,8 +1,10 @@
 import express, { json, urlencoded } from "express";
 import cors from "cors";
+import session from "express-session";
 
 import router from "./routes/router.js";
 import db from "../db/index.js";
+import passport from "./auth/googleStrategy.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 3011;
@@ -25,6 +27,12 @@ const corsOptions = {
     credentials: true,
 };
 
+if (!process.env.SESSION_SECRET) {
+    console.warn(
+        "SESSION_SECRET is not set; using an insecure default for local OAuth only"
+    );
+}
+
 async function main() {
     try {
         await db.connect();
@@ -37,6 +45,23 @@ async function main() {
     app.use(cors(corsOptions));
     app.use(urlencoded({ extended: true }));
     app.use(json());
+
+    // Short-lived session for Passport Google OAuth handshake only (app auth remains JWT)
+    app.use(
+        session({
+            secret: process.env.SESSION_SECRET || "assessly-dev-session-secret",
+            resave: false,
+            saveUninitialized: false,
+            cookie: {
+                maxAge: 10 * 60 * 1000,
+                httpOnly: true,
+                sameSite: "lax",
+            },
+        })
+    );
+    app.use(passport.initialize());
+    app.use(passport.session());
+
     app.get("/", (req, res) => {
         res.send("Hello");
     });

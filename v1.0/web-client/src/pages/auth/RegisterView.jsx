@@ -10,7 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 function RegisterView() {
-  const { register } = useAuth()
+  const { register, googleLogin } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,6 +21,7 @@ function RegisterView() {
   const [errorMessage, setErrorMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [department, setDepartment] = useState('')
 
   const validateEmail = (email) => {
     return /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(email)
@@ -32,7 +33,7 @@ function RegisterView() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!email || !password || !name || !auc_id || !role) {
+    if (!email || !password || !name || !auc_id || !role || !department) {
       setErrorMessage('All fields are required.')
       return; 
     } else if (!validateEmail(email)) {
@@ -52,7 +53,7 @@ function RegisterView() {
     }
 
     try {
-      const result = await register(email, password, name, auc_id, role)
+      const result = await register(email, password, name, auc_id, role, department)
       if (!result) {
         setErrorMessage('Registration failed. Please try again.')
         return;
@@ -184,12 +185,26 @@ function RegisterView() {
             </div>
           </div>
 
+          <div className="form-group">
+            <label htmlFor="department">Department</label>
+            <div className="input-icon-wrap department-input-wrap">
+              <input
+                type="text"
+                placeholder="Computer Science"
+                id="department"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              />
+            </div>
+          </div>
+
+
           {errorMessage && (
             <div className="error-message">{errorMessage}</div>
           )}
 
           <div className="auth-buttons">
-            <button type="button" className="google-signin-btn">
+            <button type="button" className="google-signin-btn" onClick={googleLogin}>
               <FontAwesomeIcon icon={faGoogle} />
               <span>Sign up with Google</span>
             </button>

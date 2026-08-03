@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import {
@@ -7,16 +7,24 @@ import {
   faEyeSlash,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../components/auth/AuthWrapper";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 function LoginView() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
+
+  useEffect(() => {
+    const googleErr = searchParams.get("error");
+    if (googleErr === "google_auth_failed") {
+      setErrorMessage("Google sign-in failed. Please try again.");
+    }
+  }, [searchParams]);
 
   const validateEmail = (email) => {
     return /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(email);
@@ -113,7 +121,11 @@ function LoginView() {
               </label>
               {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
               <div className="auth-buttons">
-                <button type="button" className="google-signin-btn">
+                <button
+                  type="button"
+                  className="google-signin-btn"
+                  onClick={googleLogin}
+                >
                   <FontAwesomeIcon icon={faGoogle} />
                   <span>Sign in with Google</span>
                 </button>

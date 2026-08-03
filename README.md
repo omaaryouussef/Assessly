@@ -46,7 +46,14 @@ DB_PASSWORD=your_db_password
 DB_PORT=5432
 JWT_SECRET=your_jwt_secret
 CORS_ORIGINS=http://localhost:5173,app://assessly
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:3011/api/users/auth/google/callback
+CLIENT_URL=http://localhost:5173
+SESSION_SECRET=your_session_secret
 ```
+
+In Google Cloud Console, add `GOOGLE_CALLBACK_URL` as an **Authorized redirect URI** for the OAuth client.
 
 The API defaults to port **3011**.
 

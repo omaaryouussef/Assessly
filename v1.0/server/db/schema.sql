@@ -8,7 +8,8 @@ CREATE TABLE Users
     auc_id CHAR(9) UNIQUE NOT NULL,
     name VARCHAR(50) NOT NULL,
     email VARCHAR(50) UNIQUE NOT NULL,
-    hashed_password VARCHAR(64) NOT NULL,
+    google_id VARCHAR(50) UNIQUE,
+    hashed_password VARCHAR(64) ,
     role ROLE_ENUM NOT NULL,
     department VARCHAR(50) NOT NULL
 );

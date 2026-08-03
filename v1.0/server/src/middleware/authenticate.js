@@ -16,6 +16,9 @@ export const authenticate = async (req, res, next) => {
       decoded.id,
     ]);
     const data = result.rows[0];
+    if (!data) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { hashed_password: _, ...userWithoutPassword } = data;
     const user = { ...userWithoutPassword, token };
     req.user = user;

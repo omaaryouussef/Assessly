@@ -445,6 +445,10 @@
   content: '\f0c0';
 }
 
+.department-input-wrap::before {
+  content: '\f1ad';
+}
+
 .remember-row {
   display: flex;
   align-items: center;
