@@ -54,7 +54,10 @@ function RegisterView() {
 
     try {
       const result = await register(email, password, name, auc_id, role, department)
-      if (!result) {
+      if (result.needVerification) {
+        navigate('/verify-email', { state: { email } });
+        return;
+      } else if (!result) {
         setErrorMessage('Registration failed. Please try again.')
         return;
       }

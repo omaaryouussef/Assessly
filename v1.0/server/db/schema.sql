@@ -9,9 +9,17 @@ CREATE TABLE Users
     name VARCHAR(50) NOT NULL,
     email VARCHAR(50) UNIQUE NOT NULL,
     google_id VARCHAR(50) UNIQUE,
-    hashed_password VARCHAR(64) ,
+    hashed_password VARCHAR(64),
+    is_verified BOOLEAN NULL,
     role ROLE_ENUM NOT NULL,
     department VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE email_verifications (
+    user_id INTEGER PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    code_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE Course(

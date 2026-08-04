@@ -449,6 +449,9 @@
   content: '\f1ad';
 }
 
+.code-input-wrap::before {
+  content: '\f0e7';
+}
 .remember-row {
   display: flex;
   align-items: center;

@@ -35,6 +35,7 @@ import LoginView from '../pages/auth/LoginView'
 import RegisterView from '../pages/auth/RegisterView'
 import CompleteProfile from '../pages/auth/CompleteProfile'
 import Callback from '../pages/auth/Callback'
+import VerifyEmail from '../pages/auth/VerifyEmail'
 import LandingPage from '../pages/LandingPage.jsx'
 
 const router = createBrowserRouter(
@@ -43,6 +44,7 @@ const router = createBrowserRouter(
       {!isDesktopApp() ? <Route path="/landing" element={<LandingPage />} /> : null}
       <Route path="/login" element={<LoginView />} />
       <Route path="/register" element={<RegisterView />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/complete-profile" element={<CompleteProfile />} />
       <Route path="/auth/callback" element={<Callback />} />
 

@@ -65,6 +65,9 @@ function AuthWrapper({ children }) {
         body: JSON.stringify({ email, password }),
       })
       const data = await response.json()
+      if (data.needVerification) {
+        return { needVerification: true }
+      }
       if (!response.ok) {
         throw new Error(data.error || 'Failed to login')
       }
@@ -104,13 +107,7 @@ function AuthWrapper({ children }) {
       if (data.error) {
         throw new Error(data.error)
       }
-      const { user, token } = data
-      localStorage.setItem('user_token', token)
-      setUser(user)
-      setToken(token)
-      setIsAuthenticated(true)
-      setLoading(false)
-      return { token, user }
+      return data
     } catch (error) {
       setLoading(false)
       throw error
@@ -200,6 +197,35 @@ function AuthWrapper({ children }) {
     }
   }
 
+  const verifyEmail = async (email, code) => {
+    try {
+      const response = await fetch(`${getApiBase()}/api/users/verify-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, code }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Verification failed')
+      }
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      const { token, user } = data
+      localStorage.setItem('user_token', token)
+      setUser(user)
+      setToken(token)
+      setIsAuthenticated(true)
+      setLoading(false)
+      return { token, user }
+    } catch (error) {
+      setLoading(false)
+      throw error
+    }
+  }
+
   const value = {
     user,
     token,
@@ -211,6 +237,7 @@ function AuthWrapper({ children }) {
     googleLogin,
     acceptToken,
     completeGoogleProfile,
+    verifyEmail,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

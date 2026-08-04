@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import {loginUser, getUser, createUser, googleCallback, completeGoogleProfile } from "../handlers/userHandlers.js";
+import {loginUser, getUser, createUser, googleCallback, completeGoogleProfile, verifyEmail } from "../handlers/userHandlers.js";
 import { authenticate } from "../middleware/authenticate.js";
 import passport from "../auth/googleStrategy.js";
 
@@ -8,6 +8,7 @@ const usersRouter = Router();
 
 usersRouter.post("/register", createUser);
 usersRouter.post("/login", loginUser);
+usersRouter.post("/verify-email", verifyEmail);
 usersRouter.get("/user", authenticate, getUser);
 usersRouter.get("/auth/google", passport.authenticate('google', { scope: ['profile', 'email'] }));
 usersRouter.get(
