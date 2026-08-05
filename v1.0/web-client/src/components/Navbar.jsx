@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookOpen,
   faArrowRightFromBracket,
+  faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faCalendar,
@@ -15,7 +16,7 @@ import { useAuth } from "./auth/AuthWrapper";
 import { useNavigate } from "react-router-dom";
 
 function Navbar() {
-    const {logout} = useAuth();
+    const {logout, user} = useAuth();
     const navigate = useNavigate();
     const handleLogout = ()=>{
         logout();
@@ -29,6 +30,13 @@ function Navbar() {
           <NavbarItem title="Schedule" path="/schedule" icon={faCalendar} />
           <NavbarItem title="Help" path="/help" icon={faCircleQuestion} />
           <NavbarItem title="Account" path="/account" icon={faCircleUser} />
+          {user?.role === "ADMIN" ? (
+            <NavbarItem
+              title="Invites"
+              path="/admin/invites"
+              icon={faUserPlus}
+            />
+          ) : null}
         </ul>
         <button className="logout-button" onClick={handleLogout}>
           <FontAwesomeIcon icon={faArrowRightFromBracket} />

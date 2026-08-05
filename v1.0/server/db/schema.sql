@@ -22,6 +22,16 @@ CREATE TABLE email_verifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE instructor_invites (
+    invite_id SERIAL PRIMARY KEY,
+    email VARCHAR(50) UNIQUE NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    invited_by INT REFERENCES users(user_id) ON DELETE SET NULL,
+    expires_at TIMESTAMP NOT NULL,
+    accepted_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE Course(
     course_id SERIAL PRIMARY KEY,
     instructor_id INT NOT NULL,

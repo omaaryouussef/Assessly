@@ -7,9 +7,13 @@ export const getCoursesByUserId = async (req, res) => {
   try {
     if (role == "INSTRUCTOR") {
       const result = await db.query(
-        `SELECT DISTINCT c.* FROM users u
-          JOIN COURSE c ON c.instructor_id = u.user_id
-          WHERE c.instructor_id = $1`,
+        `SELECT DISTINCT c.* FROM course c
+          WHERE c.instructor_id = $1
+          OR EXISTS (
+            SELECT 1 FROM ta_course tc
+            WHERE tc.course_id = c.course_id AND tc.ta_id = $1
+          )
+          ORDER BY c.course_id`,
         [userId],
       );
       return res.status(200).json(result.rows);
@@ -25,6 +29,8 @@ export const getCoursesByUserId = async (req, res) => {
         [userId],
       );
       return res.status(200).json(result.rows);
+    } else if (role == "ADMIN") {
+      return res.status(200).json([]);
     } else {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -339,11 +345,11 @@ export const addTaToCourse = async (req, res) => {
     }
 
     const ta = await db.query(
-      "SELECT * FROM users WHERE auc_id = $1 AND role = 'TA'",
+      "SELECT * FROM users WHERE auc_id = $1 AND role = 'INSTRUCTOR'",
       [aucId.trim()],
     );
     if (ta.rows.length === 0) {
-      return res.status(404).json({ error: "TA not found" });
+      return res.status(404).json({ error: "Instructor not found" });
     }
 
     const taId = ta.rows[0].user_id;
@@ -414,11 +420,18 @@ export const removeTaFromCourse = async (req, res) => {
 
 async function userCanAccessCourse(courseId, userId, role) {
   if (role === "INSTRUCTOR") {
-    const result = await db.query(
+    const owned = await db.query(
       "SELECT 1 FROM course WHERE course_id = $1 AND instructor_id = $2",
       [courseId, userId],
     );
-    return result.rows.length > 0;
+    if (owned.rows.length > 0) {
+      return true;
+    }
+    const asTa = await db.query(
+      "SELECT 1 FROM ta_course WHERE course_id = $1 AND ta_id = $2",
+      [courseId, userId],
+    );
+    return asTa.rows.length > 0;
   }
 
   if (role === "TA") {

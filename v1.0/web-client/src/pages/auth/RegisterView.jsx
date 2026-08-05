@@ -17,7 +17,6 @@ function RegisterView() {
   const [cPassword, setCPassword] = useState('')
   const [name, setName] = useState('')
   const [auc_id, setID] = useState('')
-  const [role, setRole] = useState('INSTRUCTOR')
   const [errorMessage, setErrorMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -33,7 +32,7 @@ function RegisterView() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!email || !password || !name || !auc_id || !role || !department) {
+    if (!email || !password || !name || !auc_id || !department) {
       setErrorMessage('All fields are required.')
       return
     } else if (!validateEmail(email)) {
@@ -58,7 +57,6 @@ function RegisterView() {
         password,
         name,
         auc_id,
-        role,
         department
       )
       if (result.needVerification) {
@@ -121,16 +119,7 @@ function RegisterView() {
           <div className="form-group">
             <label htmlFor="role">Role</label>
             <div className="input-icon-wrap role-input-wrap">
-              <select
-                name="role"
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                <option value="INSTRUCTOR">Instructor</option>
-                <option value="STUDENT">Student</option>
-                <option value="TA">TA</option>
-              </select>
+              <input type="text" id="role" value="Student" readOnly disabled />
             </div>
           </div>
 

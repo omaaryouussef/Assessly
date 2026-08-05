@@ -36,6 +36,8 @@ import RegisterView from '../pages/auth/RegisterView'
 import CompleteProfile from '../pages/auth/CompleteProfile'
 import Callback from '../pages/auth/Callback'
 import VerifyEmail from '../pages/auth/VerifyEmail'
+import AcceptInvite from '../pages/auth/AcceptInvite'
+import AdminInvitesPage from '../pages/Admin/AdminInvitesPage'
 import LandingPage from '../pages/LandingPage.jsx'
 
 const router = createBrowserRouter(
@@ -45,6 +47,7 @@ const router = createBrowserRouter(
       <Route path="/login" element={<LoginView />} />
       <Route path="/register" element={<RegisterView />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/complete-profile" element={<CompleteProfile />} />
       <Route path="/auth/callback" element={<Callback />} />
 
@@ -71,6 +74,9 @@ const router = createBrowserRouter(
           <Route path="help" element={<HelpPage />} />
           <Route path="account" element={<AccountPage />} />
 
+          <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
+            <Route path="admin/invites" element={<AdminInvitesPage />} />
+          </Route>
           {/* Instructor and TA shared routes */}
           <Route element={<RoleGuard allowedRoles={['INSTRUCTOR', 'TA']} />}>
             <Route

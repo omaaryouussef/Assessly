@@ -55,7 +55,45 @@ SESSION_SECRET=your_session_secret
 
 In Google Cloud Console, add `GOOGLE_CALLBACK_URL` as an **Authorized redirect URI** for the OAuth client.
 
+For verification and instructor invite emails, also set:
+
+```env
+EMAIL_USER=your_gmail_address
+EMAIL_PASS=your_gmail_app_password
+```
+
 The API defaults to port **3011**.
+
+### Bootstrap first admin
+
+Public registration always creates **STUDENT** accounts. Instructors join only via admin invite.
+
+Create the first admin manually after applying the schema (hash a password with bcrypt first):
+
+```sql
+INSERT INTO users (name, auc_id, email, hashed_password, role, department, is_verified)
+VALUES (
+  'Site Admin',
+  '000000001',
+  'admin@university.edu',
+  '<bcrypt_hash>',
+  'ADMIN',
+  'Administration',
+  true
+);
+```
+
+Generate a bcrypt hash (from `v1.0/server`):
+
+```bash
+node -e "import('bcrypt').then(async ({default:b})=>console.log(await b.hash('your-password',10)))"
+```
+
+Then sign in and open **Invites** to email instructor invite links.
+
+If the database was created before instructor invites existed, also run:
+
+- `v1.0/server/db/migrations/001_instructor_invites.sql`
 
 ### 3. Web client environment
 

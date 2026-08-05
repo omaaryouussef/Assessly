@@ -54,11 +54,18 @@ function normalizeQuestionLimits(question) {
 
 async function canManageCourse(courseId, userId, role) {
   if (role === "INSTRUCTOR") {
-    const result = await db.query(
+    const owned = await db.query(
       "SELECT 1 FROM course WHERE course_id = $1 AND instructor_id = $2",
       [courseId, userId],
     );
-    return result.rows.length > 0;
+    if (owned.rows.length > 0) {
+      return true;
+    }
+    const asTa = await db.query(
+      "SELECT 1 FROM ta_course WHERE course_id = $1 AND ta_id = $2",
+      [courseId, userId],
+    );
+    return asTa.rows.length > 0;
   }
 
   if (role === "TA") {
@@ -1680,8 +1687,14 @@ export const getExamsByUserId = async (req, res) => {
          JOIN course c
             ON a.course_id = c.course_id
          WHERE
-            c.instructor_id = $1
-            AND a.assess_type = 'EXAM';`,
+            a.assess_type = 'EXAM'
+            AND (
+              c.instructor_id = $1
+              OR EXISTS (
+                SELECT 1 FROM ta_course tc
+                WHERE tc.course_id = c.course_id AND tc.ta_id = $1
+              )
+            )`,
         [userId]
       );
     } else if (role === "TA") {
@@ -1743,8 +1756,14 @@ export const getQuizzesByUserId = async (req, res) => {
                FROM assessment a
                JOIN course c
                    ON a.course_id = c.course_id
-               WHERE c.instructor_id = $1
-                 AND a.assess_type = 'QUIZ'`,
+               WHERE a.assess_type = 'QUIZ'
+                 AND (
+                   c.instructor_id = $1
+                   OR EXISTS (
+                     SELECT 1 FROM ta_course tc
+                     WHERE tc.course_id = c.course_id AND tc.ta_id = $1
+                   )
+                 )`,
               [userId]
           );
       } else if (role === "TA") {
@@ -1805,8 +1824,14 @@ export const getAssignmentsByUserId = async (req, res) => {
          JOIN course c
             ON a.course_id = c.course_id
          WHERE
-            c.instructor_id = $1
-            AND a.assess_type = 'ASSIGNMENT';`,
+            a.assess_type = 'ASSIGNMENT'
+            AND (
+              c.instructor_id = $1
+              OR EXISTS (
+                SELECT 1 FROM ta_course tc
+                WHERE tc.course_id = c.course_id AND tc.ta_id = $1
+              )
+            )`,
         [userId]
       );
     } else if (role === "TA") {

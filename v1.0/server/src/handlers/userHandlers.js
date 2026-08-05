@@ -2,7 +2,7 @@ import db from '../../db/index.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
-import nodemailer from 'nodemailer'
+import { sendMail } from '../utils/mail.js'
 
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 const PENDING_PURPOSE = 'google_complete'
@@ -74,7 +74,7 @@ export const getUser = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { name, email, role, password, auc_id, department } = req.body
+    const { name, email, password, auc_id, department } = req.body
     const emailExists = await db.query('SELECT * FROM users WHERE email = $1', [
       email,
     ])
@@ -84,8 +84,8 @@ export const createUser = async (req, res) => {
     }
     const hashed_password = await bcrypt.hash(password, 10)
     const result = await db.query(
-      'INSERT INTO users (name, auc_id, email, hashed_password, role, department, is_verified) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-      [name, auc_id, email, hashed_password, role, department, false]
+      "INSERT INTO users (name, auc_id, email, hashed_password, role, department, is_verified) VALUES ($1,$2,$3,$4,'STUDENT',$5,$6) RETURNING *",
+      [name, auc_id, email, hashed_password, department, false]
     )
     const verificationCode = generateVerificationCode()
     const codeHash = await bcrypt.hash(verificationCode, 10)
@@ -97,20 +97,11 @@ export const createUser = async (req, res) => {
         new Date(Date.now() + 1000 * 60 * 60 * 24),
       ]
     )
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    })
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    await sendMail({
       to: email,
       subject: 'Verification Code',
       text: `Your verification code is: ${verificationCode}`,
-    }
-    await transporter.sendMail(mailOptions)
+    })
     res.status(201).json({ needVerification: true })
   } catch (error) {
     console.log(error)
@@ -277,7 +268,7 @@ export const completeGoogleProfile = async (req, res) => {
 
     const result = await db.query(
       `INSERT INTO users (name, email, google_id, auc_id, department, role, hashed_password, is_verified)
-i       VALUES ($1, $2, $3, $4, $5, 'STUDENT', NULL, true)
+       VALUES ($1, $2, $3, $4, $5, 'STUDENT', NULL, true)
        RETURNING *`,
       [name, email, google_id, auc_id, dept]
     )
@@ -287,6 +278,118 @@ i       VALUES ($1, $2, $3, $4, $5, 'STUDENT', NULL, true)
       expiresIn: '7d',
     })
     return res.json({ token, user: stripPassword(user) })
+  } catch (error) {
+    console.log(error)
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Account already exists' })
+    }
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+function hashInviteToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
+export const getInviteByToken = async (req, res) => {
+  try {
+    const { token } = req.query
+    if (!token) {
+      return res.status(400).json({ error: 'Missing invite token' })
+    }
+
+    const tokenHash = hashInviteToken(String(token))
+    const result = await db.query(
+      `SELECT email, expires_at, accepted_at
+       FROM instructor_invites
+       WHERE token_hash = $1`,
+      [tokenHash]
+    )
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Invite not found' })
+    }
+
+    const invite = result.rows[0]
+    if (invite.accepted_at) {
+      return res.status(400).json({ error: 'Invite already used' })
+    }
+    if (new Date(invite.expires_at) < new Date()) {
+      return res.status(400).json({ error: 'Invite has expired' })
+    }
+
+    return res.json({ email: invite.email })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const acceptInvite = async (req, res) => {
+  try {
+    const { token, name, password, auc_id, department } = req.body
+
+    if (!token || !name || !password || !auc_id || !department) {
+      return res.status(400).json({ error: 'All fields are required' })
+    }
+    if (String(password).length < 6) {
+      return res
+        .status(400)
+        .json({ error: 'Password should be at least 6 characters long' })
+    }
+    if (String(auc_id).length !== 9) {
+      return res
+        .status(400)
+        .json({ error: 'University ID must be exactly 9 characters' })
+    }
+
+    const dept = String(department).trim()
+    if (!dept) {
+      return res.status(400).json({ error: 'Department is required' })
+    }
+
+    const tokenHash = hashInviteToken(String(token))
+    const inviteResult = await db.query(
+      `SELECT * FROM instructor_invites WHERE token_hash = $1`,
+      [tokenHash]
+    )
+    if (inviteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Invite not found' })
+    }
+
+    const invite = inviteResult.rows[0]
+    if (invite.accepted_at) {
+      return res.status(400).json({ error: 'Invite already used' })
+    }
+    if (new Date(invite.expires_at) < new Date()) {
+      return res.status(400).json({ error: 'Invite has expired' })
+    }
+
+    const existing = await db.query(
+      'SELECT user_id FROM users WHERE email = $1 OR auc_id = $2',
+      [invite.email, auc_id]
+    )
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Account already exists' })
+    }
+
+    const hashed_password = await bcrypt.hash(password, 10)
+    const result = await db.query(
+      `INSERT INTO users (name, auc_id, email, hashed_password, role, department, is_verified)
+       VALUES ($1, $2, $3, $4, 'INSTRUCTOR', $5, true)
+       RETURNING *`,
+      [name.trim(), auc_id, invite.email, hashed_password, dept]
+    )
+
+    await db.query(
+      'UPDATE instructor_invites SET accepted_at = NOW() WHERE invite_id = $1',
+      [invite.invite_id]
+    )
+
+    const user = result.rows[0]
+    const jwtToken = jwt.sign({ id: user.user_id }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    })
+    return res.status(201).json({ token: jwtToken, user: stripPassword(user) })
   } catch (error) {
     console.log(error)
     if (error.code === '23505') {

@@ -91,14 +91,14 @@ function AuthWrapper({ children }) {
     window.location.assign(`${getApiBase()}/api/users/auth/google`)
   }
 
-  const register = async (email, password, name, auc_id, role, department) => {
+  const register = async (email, password, name, auc_id, department) => {
     try {
       const response = await fetch(`${getApiBase()}/api/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, name, auc_id, role, department }),
+        body: JSON.stringify({ email, password, name, auc_id, department }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -226,6 +226,41 @@ function AuthWrapper({ children }) {
     }
   }
 
+  const acceptInvite = async (inviteToken, { name, password, auc_id, department }) => {
+    try {
+      const response = await fetch(`${getApiBase()}/api/users/accept-invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: inviteToken,
+          name,
+          password,
+          auc_id,
+          department,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to accept invite')
+      }
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      const { token, user } = data
+      localStorage.setItem('user_token', token)
+      setUser(user)
+      setToken(token)
+      setIsAuthenticated(true)
+      setLoading(false)
+      return { token, user }
+    } catch (error) {
+      setLoading(false)
+      throw error
+    }
+  }
+
   const value = {
     user,
     token,
@@ -238,6 +273,7 @@ function AuthWrapper({ children }) {
     acceptToken,
     completeGoogleProfile,
     verifyEmail,
+    acceptInvite,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
