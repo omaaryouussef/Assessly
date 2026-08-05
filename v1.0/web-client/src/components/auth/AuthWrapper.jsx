@@ -55,14 +55,14 @@ function AuthWrapper({ children }) {
     checkAuth()
   }, [])
 
-  const login = async (email, password) => {
+  const login = async (email, password, remember) => {
     try {
       const response = await fetch(`${getApiBase()}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember }),
       })
       const data = await response.json()
       if (data.needVerification) {

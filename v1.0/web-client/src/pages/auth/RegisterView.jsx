@@ -35,36 +35,43 @@ function RegisterView() {
     event.preventDefault()
     if (!email || !password || !name || !auc_id || !role || !department) {
       setErrorMessage('All fields are required.')
-      return; 
+      return
     } else if (!validateEmail(email)) {
       setErrorMessage('Please enter a valid email address.')
-      return;
+      return
     } else if (password.length < 6) {
       setErrorMessage('Password should be at least 6 characters long.')
-      return;
+      return
     } else if (!confirmPassword(password, cPassword)) {
       setErrorMessage('Passwords do not match.')
-      return;
+      return
     } else if (auc_id.length < 9) {
       setErrorMessage('University ID should be at least 9 characters long.')
-      return;
+      return
     } else {
       setErrorMessage('')
     }
 
     try {
-      const result = await register(email, password, name, auc_id, role, department)
+      const result = await register(
+        email,
+        password,
+        name,
+        auc_id,
+        role,
+        department
+      )
       if (result.needVerification) {
-        navigate('/verify-email', { state: { email } });
-        return;
+        navigate('/verify-email', { state: { email } })
+        return
       } else if (!result) {
         setErrorMessage('Registration failed. Please try again.')
-        return;
+        return
       }
-      navigate('/login');
+      navigate('/login')
     } catch (error) {
       setErrorMessage(error.message || 'Registration failed. Please try again.')
-      return;
+      return
     }
   }
   return (
@@ -165,7 +172,9 @@ function RegisterView() {
                 className="password-toggle-btn"
                 onClick={() => setShowConfirmPassword((v) => !v)}
                 aria-label={
-                  showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'
+                  showConfirmPassword
+                    ? 'Hide confirm password'
+                    : 'Show confirm password'
                 }
               >
                 <FontAwesomeIcon
@@ -201,13 +210,14 @@ function RegisterView() {
             </div>
           </div>
 
-
-          {errorMessage && (
-            <div className="error-message">{errorMessage}</div>
-          )}
+          {errorMessage && <div className="error-message">{errorMessage}</div>}
 
           <div className="auth-buttons">
-            <button type="button" className="google-signin-btn" onClick={googleLogin}>
+            <button
+              type="button"
+              className="google-signin-btn"
+              onClick={googleLogin}
+            >
               <FontAwesomeIcon icon={faGoogle} />
               <span>Sign up with Google</span>
             </button>

@@ -45,7 +45,7 @@ function LoginView() {
       setErrorMessage("");
     }
     try {
-      const result = await login(email, password);
+      const result = await login(email, password, remember);
       if (result.needVerification) {
         navigate('/verify-email', { state: { email } });
         return;
