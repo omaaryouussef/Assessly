@@ -6,6 +6,7 @@ import { sendMail } from '../utils/mail.js'
 
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 const PENDING_PURPOSE = 'google_complete'
+const PASSWORD_RESET_PURPOSE = 'password_reset'
 
 function stripPassword(user) {
   if (!user) return user
@@ -35,12 +36,10 @@ export const loginUser = async (req, res) => {
       [user.user_id]
     )
     if (!isUserVerified.rows[0].is_verified) {
-      return res
-        .status(401)
-        .json({
-          error: 'Please verify your email first!',
-          needVerification: true,
-        })
+      return res.status(401).json({
+        error: 'Please verify your email first!',
+        needVerification: true,
+      })
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.hashed_password)
@@ -147,11 +146,9 @@ export const verifyEmail = async (req, res) => {
 
     const record = verification.rows[0]
     if (new Date(record.expires_at) < new Date()) {
-      return res
-        .status(400)
-        .json({
-          error: 'Verification code has expired. Please register again.',
-        })
+      return res.status(400).json({
+        error: 'Verification code has expired. Please register again.',
+      })
     }
 
     const isValid = await bcrypt.compare(String(code).trim(), record.code_hash)
@@ -395,6 +392,131 @@ export const acceptInvite = async (req, res) => {
     if (error.code === '23505') {
       return res.status(409).json({ error: 'Account already exists' })
     }
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' })
+    }
+    const user = await db.query('SELECT * FROM users WHERE email = $1', [email])
+    if (user.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+    await db.query('DELETE FROM password_reset_codes WHERE user_id = $1', [
+      user.rows[0].user_id,
+    ])
+    const verificationCode = generateVerificationCode()
+    const codeHash = await bcrypt.hash(verificationCode, 10)
+    await db.query(
+      `INSERT INTO password_reset_codes (user_id, code_hash, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '15 minutes')`,
+      [user.rows[0].user_id, codeHash]
+    )
+    await sendMail({
+      to: email,
+      subject: 'Password Reset Code',
+      text: `Your password reset code is: ${verificationCode}`,
+    })
+    return res.status(200).json({ message: 'Password reset email sent' })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const verifyPasswordResetCode = async (req, res) => {
+  console.log('verifyPasswordResetCode')
+  try {
+    const { email, code } = req.body
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Email and code are required' })
+    }
+    const user = await db.query('SELECT * FROM users WHERE email = $1', [email])
+    if (user.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+    const passwordResetCode = await db.query(
+      `SELECT code_hash, expires_at > NOW() AS is_valid
+       FROM password_reset_codes
+       WHERE user_id = $1`,
+      [user.rows[0].user_id]
+    )
+    if (passwordResetCode.rows.length === 0) {
+      return res.status(404).json({ error: 'Password reset code not found' })
+    }
+    if (!passwordResetCode.rows[0].is_valid) {
+      return res.status(400).json({ error: 'Password reset code has expired' })
+    }
+    const isValid = await bcrypt.compare(
+      String(code).trim(),
+      passwordResetCode.rows[0].code_hash
+    )
+    if (!isValid) {
+      return res.status(400).json({ error: 'Invalid password reset code' })
+    }
+    await db.query('DELETE FROM password_reset_codes WHERE user_id = $1', [
+      user.rows[0].user_id,
+    ])
+
+    const resetToken = jwt.sign(
+      {
+        id: user.rows[0].user_id,
+        email: user.rows[0].email,
+        purpose: PASSWORD_RESET_PURPOSE,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    )
+    return res.status(200).json({ resetToken })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { resetToken, password } = req.body
+    if (!resetToken || !password) {
+      return res
+        .status(400)
+        .json({ error: 'Reset token and password are required' })
+    }
+    if (String(password).length < 6) {
+      return res
+        .status(400)
+        .json({ error: 'Password should be at least 6 characters long' })
+    }
+
+    let decoded
+    try {
+      decoded = jwt.verify(resetToken, process.env.JWT_SECRET)
+    } catch {
+      return res.status(401).json({ error: 'Invalid or expired reset token' })
+    }
+
+    if (decoded.purpose !== PASSWORD_RESET_PURPOSE || !decoded.id) {
+      return res.status(401).json({ error: 'Invalid reset token' })
+    }
+
+    const hashed_password = await bcrypt.hash(password, 10)
+    const updated = await db.query(
+      'UPDATE users SET hashed_password = $1 WHERE user_id = $2 RETURNING user_id',
+      [hashed_password, decoded.id]
+    )
+    if (updated.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+    await db.query('DELETE FROM password_reset_codes WHERE user_id = $1', [
+      decoded.id,
+    ])
+    return res.status(200).json({ message: 'Password reset successfully' })
+  } catch (error) {
+    console.log(error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

@@ -225,8 +225,91 @@ function AuthWrapper({ children }) {
       throw error
     }
   }
+  const forgotPassword = async (email) => {
+    try {
+      const response = await fetch(
+        `${getApiBase()}/api/users/forgot-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        }
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send password reset email')
+      }
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      return data
+    } catch (error) {
+      throw error
+    }
+  }
 
-  const acceptInvite = async (inviteToken, { name, password, auc_id, department }) => {
+  const verifyPasswordResetCode = async (email, code) => {
+    try {
+      const response = await fetch(
+        `${getApiBase()}/api/users/verify-password-reset-code`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, code }),
+        }
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid or expired reset code')
+      }
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      if (!data.resetToken) {
+        throw new Error('Reset token missing from server response')
+      }
+      sessionStorage.setItem('password_reset_token', data.resetToken)
+      return data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const resetPassword = async (password) => {
+    try {
+      const resetToken = sessionStorage.getItem('password_reset_token')
+      if (!resetToken) {
+        throw new Error('Reset session expired. Please request a new code.')
+      }
+      const response = await fetch(`${getApiBase()}/api/users/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ resetToken, password }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reset password')
+      }
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      sessionStorage.removeItem('password_reset_token')
+      return data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const acceptInvite = async (
+    inviteToken,
+    { name, password, auc_id, department }
+  ) => {
     try {
       const response = await fetch(`${getApiBase()}/api/users/accept-invite`, {
         method: 'POST',
@@ -274,6 +357,9 @@ function AuthWrapper({ children }) {
     completeGoogleProfile,
     verifyEmail,
     acceptInvite,
+    forgotPassword,
+    verifyPasswordResetCode,
+    resetPassword,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

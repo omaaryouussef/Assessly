@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBuildingColumns } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../components/auth/AuthWrapper'
@@ -7,10 +7,16 @@ import { useAuth } from '../../components/auth/AuthWrapper'
 function VerifyEmail() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { verifyEmail } = useAuth()
+  const [searchParams] = useSearchParams()
+  const { verifyEmail, verifyPasswordResetCode } = useAuth()
 
+  const purpose = searchParams.get('purpose') || ''
+  const isReset = purpose === 'reset'
   const emailFromState = location.state?.email || ''
-  const [email, setEmail] = useState(emailFromState)
+  const emailFromURL = searchParams.get('email') || ''
+  const emailFromQueryOrState = emailFromState || emailFromURL
+
+  const [email, setEmail] = useState(emailFromQueryOrState)
   const [code, setCode] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -30,12 +36,18 @@ function VerifyEmail() {
     setErrorMessage('')
     setSubmitting(true)
     try {
+      if (isReset) {
+        const result = await verifyPasswordResetCode(email.trim(), code.trim())
+        navigate('/reset-password', {
+          replace: true,
+          state: { resetToken: result.resetToken },
+        })
+        return
+      }
       await verifyEmail(email.trim(), code.trim())
       navigate('/courses')
     } catch (error) {
-      setErrorMessage(
-        error.message || 'Verification failed. Please try again.'
-      )
+      setErrorMessage(error.message || 'Verification failed. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -55,7 +67,7 @@ function VerifyEmail() {
 
       <div className="register-form">
         <div className="form-header-text">
-          <h3>Verify your email</h3>
+          <h3>{isReset ? 'Verify reset code' : 'Verify your email'}</h3>
           <p>
             {email
               ? `Enter the 6-digit code sent to ${email}`
@@ -64,7 +76,7 @@ function VerifyEmail() {
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
-          {!emailFromState ? (
+          {!emailFromQueryOrState ? (
             <div className="form-group">
               <label htmlFor="email">University Email</label>
               <div className="input-icon-wrap email-input-wrap">
@@ -103,13 +115,17 @@ function VerifyEmail() {
 
           <div className="auth-buttons">
             <button type="submit" disabled={submitting}>
-              {submitting ? 'Verifying…' : 'Verify and continue'}
+              {submitting
+                ? 'Verifying…'
+                : isReset
+                  ? 'Continue to reset password'
+                  : 'Verify and continue'}
             </button>
           </div>
         </form>
 
         <p className="register-footer">
-          Already verified?
+          {isReset ? 'Remembered your password?' : 'Already verified?'}
           <a href="/login">Log in</a>
         </p>
       </div>

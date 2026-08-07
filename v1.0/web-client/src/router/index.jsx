@@ -4,10 +4,9 @@ import {
   createRoutesFromElements,
   Navigate,
   Route,
-  Routes,
 } from 'react-router-dom'
 
-import{ isDesktopApp } from '../config/api.js';
+import { isDesktopApp } from '../config/api.js'
 import ProtectedRoutes from '../components/auth/ProtectedRoutes'
 import RoleGuard from '../components/auth/RoleGuard'
 import App from '../App'
@@ -39,20 +38,26 @@ import VerifyEmail from '../pages/auth/VerifyEmail'
 import AcceptInvite from '../pages/auth/AcceptInvite'
 import AdminInvitesPage from '../pages/Admin/AdminInvitesPage'
 import LandingPage from '../pages/LandingPage.jsx'
+import ForgotPassword from '../pages/auth/ForgotPassword'
+import ResetPassword from '../pages/auth/ResetPassword'
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <>
-      {!isDesktopApp() ? <Route path="/landing" element={<LandingPage />} /> : null}
-      <Route path="/login" element={<LoginView />} />
-      <Route path="/register" element={<RegisterView />} />
-      <Route path="/verify-email" element={<VerifyEmail />} />
-      <Route path="/accept-invite" element={<AcceptInvite />} />
-      <Route path="/complete-profile" element={<CompleteProfile />} />
-      <Route path="/auth/callback" element={<Callback />} />
+    <Route>
+      {!isDesktopApp() ? (
+        <Route path="landing" element={<LandingPage />} />
+      ) : null}
+      <Route path="login" element={<LoginView />} />
+      <Route path="register" element={<RegisterView />} />
+      <Route path="verify-email" element={<VerifyEmail />} />
+      <Route path="accept-invite" element={<AcceptInvite />} />
+      <Route path="complete-profile" element={<CompleteProfile />} />
+      <Route path="auth/callback" element={<Callback />} />
+      <Route path="forgot-password" element={<ForgotPassword />} />
+      <Route path="reset-password" element={<ResetPassword />} />
 
-      <Route path="/" element={<ProtectedRoutes />}>
-        <Route path="/" element={<App />}>
+      <Route element={<ProtectedRoutes />}>
+        <Route element={<App />}>
           <Route index element={<AllCoursesPage />} />
           {/* Course related routes */}
           <Route path="courses" element={<AllCoursesPage />} />
@@ -120,7 +125,7 @@ const router = createBrowserRouter(
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Route>
-    </>
+    </Route>
   )
 )
 

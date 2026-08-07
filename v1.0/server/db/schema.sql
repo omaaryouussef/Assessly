@@ -22,6 +22,13 @@ CREATE TABLE email_verifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE password_reset_codes (
+    user_id INTEGER PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    code_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE instructor_invites (
     invite_id SERIAL PRIMARY KEY,
     email VARCHAR(50) UNIQUE NOT NULL,

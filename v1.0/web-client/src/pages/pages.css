@@ -335,6 +335,37 @@
   color: #243447;
 }
 
+.password-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.forgot-password-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #135bec;
+  cursor: pointer;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.forgot-password-btn:hover {
+  color: #0f4bc4;
+  text-decoration: underline;
+}
+
+.forgot-password-btn:focus-visible {
+  outline: 2px solid #135bec;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .form-group input[type='email'],
 .form-group input[type='password'],
 .form-group input[type='text'] {

@@ -93,7 +93,16 @@ function LoginView() {
                 </div>
               </div>
               <div className="form-group">
-                <label htmlFor="password">Password</label>
+                <div className="password-label-row">
+                  <label htmlFor="password">Password</label>
+                  <button
+                    type="button"
+                    className="forgot-password-btn"
+                    onClick={() => navigate("/forgot-password", { state: { email } })}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <div className="input-icon-wrap password-input-wrap password-input-wrap--toggle">
                   <input
                     type={showPassword ? "text" : "password"}
