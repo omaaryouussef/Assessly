@@ -33,11 +33,15 @@ function AssessmentStudioPage() {
 
   // Draft management
   const draftSnapshotRef = useRef(null)
-  const skipDraftPersistRef = useRef(false)
+  // Start true so Strict Mode remount / init races cannot persist a half-ready form.
+  const skipDraftPersistRef = useRef(true)
+  // Snapshot after init/continue/discard — only persist when the form diverges from this.
+  const draftBaselineRef = useRef(null)
   const [draftResolved, setDraftResolved] = useState(false)
   const [showDraftModal, setShowDraftModal] = useState(false)
   const [pendingDraft, setPendingDraft] = useState(null)
   const [editingAssessment, setEditingAssessment] = useState(assessmentToEdit)
+  const [successInfo, setSuccessInfo] = useState({ wasEdit: false, type: '' })
   // Assessment specifications
   const [title, setTitle] = useState('')
   const [duration, setDuration] = useState(0)
@@ -239,9 +243,16 @@ function AssessmentStudioPage() {
     }
   }, [assessmentToEdit, assessmentType, loadAssessmentForEdit])
 
+  const enableDraftPersist = useCallback(() => {
+    draftBaselineRef.current = null
+    skipDraftPersistRef.current = false
+  }, [])
+
   useEffect(() => {
     let active = true
-    skipDraftPersistRef.current = false
+    // Block autosave until init finishes (or the draft modal is resolved).
+    skipDraftPersistRef.current = true
+    draftBaselineRef.current = null
 
     const applyNavIntent = async () => {
       const toEdit = location.state?.assessmentToEdit
@@ -255,6 +266,12 @@ function AssessmentStudioPage() {
       if (navType) {
         setType(navType)
       }
+    }
+
+    const finishInit = () => {
+      if (!active) return
+      setDraftResolved(true)
+      enableDraftPersist()
     }
 
     const initializeStudio = async () => {
@@ -275,13 +292,13 @@ function AssessmentStudioPage() {
             setAssessmentErr(error.message || 'Failed to load assessment')
           }
         }
-        if (active) setDraftResolved(true)
+        finishInit()
         return
       }
 
       if (enteredFromSidebar) {
         applyDraft(savedDraft)
-        if (active) setDraftResolved(true)
+        finishInit()
         return
       }
 
@@ -296,7 +313,7 @@ function AssessmentStudioPage() {
     return () => {
       active = false
     }
-  }, [applyDraft, courseId, loadAssessmentForEdit, location.key])
+  }, [applyDraft, courseId, enableDraftPersist, loadAssessmentForEdit, location.key])
 
   draftSnapshotRef.current = buildDraftSnapshot()
 
@@ -304,9 +321,10 @@ function AssessmentStudioPage() {
     return () => {
       if (!courseId || skipDraftPersistRef.current) return
       const snapshot = draftSnapshotRef.current
-      if (snapshot && !isDraftEmpty(snapshot)) {
-        saveDraft(courseId, snapshot)
-      }
+      if (!snapshot || isDraftEmpty(snapshot)) return
+      if (draftBaselineRef.current === null) return
+      if (JSON.stringify(snapshot) === draftBaselineRef.current) return
+      saveDraft(courseId, snapshot)
     }
   }, [courseId])
 
@@ -314,10 +332,29 @@ function AssessmentStudioPage() {
     if (!draftResolved || showDraftModal || skipDraftPersistRef.current) return
 
     const snapshot = buildDraftSnapshot()
+    const serialized = JSON.stringify(snapshot)
+
+    // First resolved snapshot is the baseline (loaded edit / restored draft / empty create).
+    if (draftBaselineRef.current === null) {
+      draftBaselineRef.current = serialized
+      return
+    }
+
+    if (serialized === draftBaselineRef.current) return
+
     if (!isDraftEmpty(snapshot)) {
       saveDraft(courseId, snapshot)
+    } else {
+      clearDraft(courseId)
     }
   }, [buildDraftSnapshot, courseId, draftResolved, showDraftModal])
+
+  const commitDraftCleared = useCallback(() => {
+    skipDraftPersistRef.current = true
+    draftSnapshotRef.current = null
+    draftBaselineRef.current = null
+    clearDraft(courseId)
+  }, [courseId])
 
   const handleContinueDraft = () => {
     const draft = pendingDraft ?? loadDraft(courseId)
@@ -327,10 +364,11 @@ function AssessmentStudioPage() {
     setPendingDraft(null)
     setShowDraftModal(false)
     setDraftResolved(true)
+    enableDraftPersist()
   }
 
   const handleDiscardDraft = async () => {
-    clearDraft(courseId)
+    commitDraftCleared()
     resetFormState()
     setPendingDraft(null)
     setShowDraftModal(false)
@@ -343,6 +381,7 @@ function AssessmentStudioPage() {
     }
 
     setDraftResolved(true)
+    enableDraftPersist()
   }
 
   const handleSaveQuestion = () => {
@@ -702,8 +741,9 @@ function AssessmentStudioPage() {
       const data = await response.json()
       if (!response.ok)
         throw new Error(data.error || 'Failed to create assessment')
-      skipDraftPersistRef.current = true
-      clearDraft(courseId)
+      setSuccessInfo({ wasEdit: false, type })
+      commitDraftCleared()
+      resetFormState()
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Failed to create assessment', error)
@@ -719,8 +759,7 @@ function AssessmentStudioPage() {
         : type === 'EXAM'
           ? `/course/${courseId}/exams`
           : `/course/${courseId}/quizzes`
-    skipDraftPersistRef.current = true
-    clearDraft(courseId)
+    commitDraftCleared()
     resetFormState()
     navigate(path)
   }
@@ -792,8 +831,9 @@ function AssessmentStudioPage() {
       const data = await response.json()
       if (!response.ok)
         throw new Error(data.error || 'Failed to update assessment')
-      skipDraftPersistRef.current = true
-      clearDraft(courseId)
+      setSuccessInfo({ wasEdit: true, type })
+      commitDraftCleared()
+      resetFormState()
       setShowSuccessModal(true)
     } catch (error) {
       console.error('Failed to update assessment', error)
@@ -1175,9 +1215,11 @@ function AssessmentStudioPage() {
         <div className="success-modal-backdrop">
           <div className="success-modal">
             <h3>
-              {editingAssessment ? 'Assessment Updated' : 'Assessment Created'}
+              {successInfo.wasEdit
+                ? 'Assessment Updated'
+                : 'Assessment Created'}
             </h3>
-            {editingAssessment ? (
+            {successInfo.wasEdit ? (
               <p>Assessment has been updated successfully.</p>
             ) : (
               <p>Assessment has been created successfully.</p>
@@ -1188,21 +1230,20 @@ function AssessmentStudioPage() {
               className="success-modal-btn"
               onClick={() => {
                 const path =
-                  type === 'ASSIGNMENT'
+                  successInfo.type === 'ASSIGNMENT'
                     ? `/course/${courseId}/assignments`
-                    : type === 'EXAM'
+                    : successInfo.type === 'EXAM'
                       ? `/course/${courseId}/exams`
                       : `/course/${courseId}/quizzes`
-                skipDraftPersistRef.current = true
-                clearDraft(courseId)
+                commitDraftCleared()
                 navigate(path)
                 setShowSuccessModal(false)
               }}
             >
               Go to{' '}
-              {type === 'ASSIGNMENT'
+              {successInfo.type === 'ASSIGNMENT'
                 ? 'Assignments'
-                : type === 'EXAM'
+                : successInfo.type === 'EXAM'
                   ? 'Exams'
                   : 'Quizzes'}{' '}
               Page

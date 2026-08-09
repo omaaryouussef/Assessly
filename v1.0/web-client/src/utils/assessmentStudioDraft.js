@@ -3,6 +3,8 @@ const draftKey = (courseId) => `assessment_studio_draft_${courseId}`
 export function isDraftEmpty(draft) {
   if (!draft) return true
 
+  // editingAssessmentId alone is not content — edit navigation sets it on first
+  // paint and would otherwise create false-positive drafts (esp. under Strict Mode).
   const hasContent =
     Boolean(draft.title?.trim()) ||
     Boolean(draft.dueDate) ||
@@ -15,8 +17,7 @@ export function isDraftEmpty(draft) {
     Boolean(draft.screenSnapshot) ||
     Boolean(draft.questionStats) ||
     Boolean(draft.networkRestriction) ||
-    Boolean(draft.processMonitoring) ||
-    draft.editingAssessmentId != null
+    Boolean(draft.processMonitoring)
 
   return !hasContent
 }
