@@ -7,8 +7,6 @@ function DesktopApiSettings() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [localStatus, setLocalStatus] = useState(null)
-  const [localBusy, setLocalBusy] = useState(false)
 
   useEffect(() => {
     if (!isDesktopApp()) {
@@ -16,10 +14,9 @@ function DesktopApiSettings() {
     }
 
     async function loadDesktopSettings() {
-      const [savedUrl, desktopPlatform, status] = await Promise.all([
+      const [savedUrl, desktopPlatform] = await Promise.all([
         window.assesslyDesktop.getApiBaseUrl(),
         window.assesslyDesktop.getPlatform(),
-        window.assesslyDesktop.getLocalServerStatus(),
       ])
 
       if (savedUrl) {
@@ -27,7 +24,6 @@ function DesktopApiSettings() {
       }
 
       setPlatform(desktopPlatform)
-      setLocalStatus(status)
     }
 
     loadDesktopSettings()
@@ -35,49 +31,6 @@ function DesktopApiSettings() {
 
   if (!isDesktopApp()) {
     return null
-  }
-
-  const handleUseLocal = async () => {
-    const localUrl = await window.assesslyDesktop.getDefaultLocalApiUrl()
-    setApiUrl(localUrl)
-  }
-
-  const handleStartLocalServer = async () => {
-    setLocalBusy(true)
-    setError('')
-    setMessage('')
-
-    try {
-      const status = await window.assesslyDesktop.startLocalServer()
-      setLocalStatus(status)
-      const localUrl = status.url
-      setApiUrl(localUrl)
-      const savedUrl = await window.assesslyDesktop.setApiBaseUrl(localUrl)
-      setResolvedApiBase(savedUrl)
-      setMessage(
-        'Local server started. Students on the same network can use your machine IP with port 3011.'
-      )
-    } catch (startError) {
-      setError(startError.message || 'Failed to start local server')
-    } finally {
-      setLocalBusy(false)
-    }
-  }
-
-  const handleStopLocalServer = async () => {
-    setLocalBusy(true)
-    setError('')
-    setMessage('')
-
-    try {
-      const status = await window.assesslyDesktop.stopLocalServer()
-      setLocalStatus(status)
-      setMessage('Local server stopped.')
-    } catch (stopError) {
-      setError(stopError.message || 'Failed to stop local server')
-    } finally {
-      setLocalBusy(false)
-    }
   }
 
   const handleSave = async (event) => {
@@ -101,36 +54,10 @@ function DesktopApiSettings() {
     <section className="desktop-settings">
       <h3>Desktop connection</h3>
       <p>Platform: {platform || 'unknown'}</p>
-
-      <div className="desktop-settings__local">
-        <h4>Local mode (small schools)</h4>
-        <p>
-          Start a bundled PostgreSQL database and Assessly API on this machine.
-          Coding assessments still require a remote Piston service.
-        </p>
-        <p>
-          Status:{' '}
-          {localStatus?.running
-            ? `running at ${localStatus.url}`
-            : 'stopped'}
-        </p>
-        <div className="desktop-settings__actions">
-          <button
-            type="button"
-            onClick={handleStartLocalServer}
-            disabled={localBusy || localStatus?.running}
-          >
-            {localBusy ? 'Working...' : 'Start local server'}
-          </button>
-          <button
-            type="button"
-            onClick={handleStopLocalServer}
-            disabled={localBusy || !localStatus?.running}
-          >
-            Stop local server
-          </button>
-        </div>
-      </div>
+      <p>
+        Point this app at your hosted Assessly API (the same backend the website
+        uses).
+      </p>
 
       <form onSubmit={handleSave}>
         <label htmlFor="desktop-api-url">Server URL</label>
@@ -139,13 +66,11 @@ function DesktopApiSettings() {
           type="url"
           value={apiUrl}
           onChange={(event) => setApiUrl(event.target.value)}
+          placeholder="https://api.yourdomain.com"
           required
         />
 
         <div className="desktop-settings__actions">
-          <button type="button" onClick={handleUseLocal} disabled={saving}>
-            Use local server URL
-          </button>
           <button type="submit" disabled={saving || !apiUrl.trim()}>
             {saving ? 'Saving...' : 'Save server URL'}
           </button>

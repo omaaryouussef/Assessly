@@ -15,12 +15,6 @@ extraResources:
     to: web-client
     filter:
       - '**/*'
-  - from: ../server
-    to: server
-    filter:
-      - 'src/**/*'
-      - 'db/**/*'
-      - 'package.json'
 
 win:
   target:

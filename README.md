@@ -16,7 +16,7 @@ Assessly is an academic assessment platform for managing courses, enrollments, a
 ```
 Assessly/
 ├── v1.0/
-│   ├── desktop/             # Electron shell (lockdown, local mode)
+│   ├── desktop/             # Electron shell (lockdown, API URL config)
 │   ├── web-client/          # React frontend (Vite)
 │   └── server/              # Express API
 │       ├── db/
@@ -136,15 +136,7 @@ cd v1.0/web-client && npm run dev
 cd v1.0/desktop && npm run dev
 ```
 
-On first launch, configure the server URL (institution hosted API or `http://localhost:3011`).
-
-### Local mode (small schools)
-
-From **Account → Desktop connection** in the desktop app:
-
-1. Click **Start local server** (bundled PostgreSQL + API on port 3011).
-2. Students on the same LAN can point to `http://<instructor-ip>:3011`.
-3. Coding assessments still need a remote [Piston](https://github.com/engineer-man/piston) instance configured on the API host.
+On first launch, configure the API server URL (your hosted API, or `http://localhost:3011` for local development). Coding **Run** uses [Piston](https://github.com/engineer-man/piston) on that API host via `PISTON_API_URL`.
 
 ### Production builds
 

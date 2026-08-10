@@ -1,17 +1,8 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  getApiBaseUrl,
-  getDefaultLocalApiUrl,
-  setApiBaseUrl,
-} from './config.js'
+import { getApiBaseUrl, setApiBaseUrl } from './config.js'
 import { LockdownManager } from './lockdown/LockdownManager.js'
-import {
-  getLocalServerStatus,
-  startLocalServer,
-  stopLocalServer,
-} from './localServer.js'
 import { registerAppProtocol, registerPrivilegedScheme } from './protocol.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -78,20 +69,7 @@ function createMainWindow() {
 function registerIpcHandlers() {
   ipcMain.handle('config:get-api-base-url', () => getApiBaseUrl())
   ipcMain.handle('config:set-api-base-url', (_event, url) => setApiBaseUrl(url))
-  ipcMain.handle('config:get-default-local-url', () => getDefaultLocalApiUrl())
   ipcMain.handle('config:get-platform', () => process.platform)
-
-  ipcMain.handle('local-server:start', async () => {
-    const status = await startLocalServer()
-    return status
-  })
-
-  ipcMain.handle('local-server:stop', async () => {
-    await stopLocalServer()
-    return getLocalServerStatus()
-  })
-
-  ipcMain.handle('local-server:status', () => getLocalServerStatus())
 
   ipcMain.handle('lockdown:precheck', async (_event, profile) => {
     if (!lockdownManager) {
@@ -166,7 +144,6 @@ app.on('before-quit', async () => {
   if (lockdownManager) {
     await lockdownManager.stop()
   }
-  await stopLocalServer()
 })
 
 app.on('window-all-closed', () => {

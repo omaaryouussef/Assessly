@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const CONFIG_FILE = 'assessly-config.json'
-const DEFAULT_LOCAL_URL = 'http://localhost:3011'
 
 function getConfigPath() {
   return path.join(app.getPath('userData'), CONFIG_FILE)
@@ -89,8 +88,4 @@ export function setApiBaseUrl(url) {
   })
 
   return trimmed
-}
-
-export function getDefaultLocalApiUrl() {
-  return DEFAULT_LOCAL_URL
 }

@@ -6,20 +6,6 @@ function DesktopSetupScreen({ onComplete }) {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const handleUseLocal = async () => {
-    setSaving(true)
-    setError('')
-
-    try {
-      const localUrl = await window.assesslyDesktop.getDefaultLocalApiUrl()
-      setApiUrl(localUrl)
-    } catch (setupError) {
-      setError(setupError.message || 'Failed to load local server URL')
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const handleSave = async (event) => {
     event.preventDefault()
     setSaving(true)
@@ -41,8 +27,9 @@ function DesktopSetupScreen({ onComplete }) {
       <div className="desktop-setup__card">
         <h1>Connect Assessly</h1>
         <p>
-          Enter your institution&apos;s Assessly server URL, or use local mode for
-          development.
+          Enter your Assessly API server URL. Use the same backend the website
+          uses (for local development, typically{' '}
+          <code>http://localhost:3011</code>).
         </p>
 
         <form onSubmit={handleSave}>
@@ -52,14 +39,11 @@ function DesktopSetupScreen({ onComplete }) {
             type="url"
             value={apiUrl}
             onChange={(event) => setApiUrl(event.target.value)}
-            placeholder="https://assessly.university.edu"
+            placeholder="https://api.yourdomain.com"
             required
           />
 
           <div className="desktop-setup__actions">
-            <button type="button" onClick={handleUseLocal} disabled={saving}>
-              Use local server
-            </button>
             <button type="submit" disabled={saving || !apiUrl.trim()}>
               {saving ? 'Saving...' : 'Continue'}
             </button>

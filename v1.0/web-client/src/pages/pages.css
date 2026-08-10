@@ -6196,12 +6196,6 @@ html[data-exam-mode='true'] #root {
   max-width: 640px;
 }
 
-.desktop-settings__local {
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
 .desktop-settings__actions {
   display: flex;
   gap: 0.75rem;
