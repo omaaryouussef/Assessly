@@ -9,7 +9,7 @@ import passport from "./auth/googleStrategy.js";
 const app = express();
 const port = Number(process.env.PORT) || 3011;
 
-const defaultOrigins = ["http://localhost:5173", "app://assessly"];
+const defaultOrigins = ["http://localhost:5173", "https://assessly-auc.vercel.app"];
 const allowedOrigins = (process.env.CORS_ORIGINS || defaultOrigins.join(","))
     .split(",")
     .map((origin) => origin.trim())

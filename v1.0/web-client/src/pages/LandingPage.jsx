@@ -57,6 +57,7 @@ const FEATURES = [
 
 function LandingPage() {
   const navigate = useNavigate()
+  console.log(import.meta.env.VITE_API_BASE_URL);
 
   return (
     <div className="landing-page">
