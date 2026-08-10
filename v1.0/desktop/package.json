@@ -9,8 +9,6 @@
   "scripts": {
     "dev": "electronmon .",
     "start": "electron .",
-    "build:web": "npm run build --prefix ../web-client",
-    "build": "npm run build:web && electron-builder --config electron-builder.yml",
     "build:win": "npm run build:web && electron-builder --win --config electron-builder.yml",
     "build:mac": "npm run build:web && electron-builder --mac --config electron-builder.yml"
   },
