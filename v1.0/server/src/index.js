@@ -9,20 +9,50 @@ import passport from "./auth/googleStrategy.js";
 const app = express();
 const port = Number(process.env.PORT) || 3011;
 
-const defaultOrigins = ["http://localhost:5173", "https://assessly-auc.vercel.app"];
+const defaultOrigins = [
+    "http://localhost:5173",
+    "https://assessly-auc.vercel.app",
+    "app://assessly",
+];
+
+function normalizeOrigin(origin) {
+    return String(origin || "")
+        .trim()
+        .replace(/\/$/, "");
+}
+
 const allowedOrigins = (process.env.CORS_ORIGINS || defaultOrigins.join(","))
     .split(",")
-    .map((origin) => origin.trim())
+    .map(normalizeOrigin)
     .filter(Boolean);
+
+function isOriginAllowed(origin) {
+    const normalized = normalizeOrigin(origin);
+
+    if (!normalized || allowedOrigins.includes(normalized)) {
+        return true;
+    }
+
+    // Allow Vercel production + preview URLs when configured as *.vercel.app
+    if (
+        allowedOrigins.includes("*.vercel.app") &&
+        /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalized)
+    ) {
+        return true;
+    }
+
+    return false;
+}
 
 const corsOptions = {
     origin(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (isOriginAllowed(origin)) {
             callback(null, true);
             return;
         }
 
-        callback(new Error(`Origin ${origin} is not allowed by CORS`));
+        // Reject without throwing so the preflight still gets a CORS response.
+        callback(null, false);
     },
     credentials: true,
 };
