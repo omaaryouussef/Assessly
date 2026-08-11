@@ -161,7 +161,7 @@ function CompleteProfile() {
 
           <div className="form-group">
             <label htmlFor="department">Department</label>
-            <div className="input-icon-wrap">
+            <div className="input-icon-wrap department-input-wrap">
               <input
                 type="text"
                 placeholder="Computer Science"
