@@ -65,7 +65,7 @@ if (!process.env.SESSION_SECRET) {
 
 async function main() {
     try {
-        await db.connect();
+        await db.query("SELECT 1");
         console.log("Connected to database");
     } catch (error) {
         console.error("Failed to connect to database:", error.message);

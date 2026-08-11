@@ -20,8 +20,7 @@ Assessly/
 │   ├── web-client/          # React frontend (Vite)
 │   └── server/              # Express API
 │       ├── db/
-│       │   ├── schema.sql
-│       │   └── migrations/
+│       │   └── schema.sql
 │       └── src/
 └── README.md
 ```
@@ -90,10 +89,6 @@ node -e "import('bcrypt').then(async ({default:b})=>console.log(await b.hash('yo
 ```
 
 Then sign in and open **Invites** to email instructor invite links.
-
-If the database was created before instructor invites existed, also run:
-
-- `v1.0/server/db/migrations/001_instructor_invites.sql`
 
 ### 3. Web client environment
 

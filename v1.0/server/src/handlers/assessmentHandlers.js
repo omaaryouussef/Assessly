@@ -1,4 +1,4 @@
-import db from "../../db/index.js";
+import db, { txHttpError, withTransaction } from "../../db/index.js";
 import {
   assessmentRequiresDesktop,
   normalizeSecuritySettings,
@@ -153,21 +153,26 @@ const mapQuiz = (row) => ({
   }),
 });
 
-async function upsertStudentAccess(studentId, assessmentId, canAccess) {
-  const existing = await db.query(
+async function upsertStudentAccess(
+  studentId,
+  assessmentId,
+  canAccess,
+  client = db,
+) {
+  const existing = await client.query(
     "SELECT id FROM student_access_assessments WHERE student_id = $1 AND assessment_id = $2",
     [studentId, assessmentId],
   );
 
   if (existing.rows.length > 0) {
-    await db.query(
+    await client.query(
       "UPDATE student_access_assessments SET can_access = $1 WHERE student_id = $2 AND assessment_id = $3",
       [canAccess, studentId, assessmentId],
     );
     return;
   }
 
-  await db.query(
+  await client.query(
     "INSERT INTO student_access_assessments (can_access, student_id, assessment_id) VALUES ($1, $2, $3)",
     [canAccess, studentId, assessmentId],
   );
@@ -380,46 +385,52 @@ export const toggleAssessmentPublish = async (req, res) => {
       }
 
       try {
-        await db.query("BEGIN");
-
-        await db.query(
-          "UPDATE assessment SET is_published = true WHERE assessment_id = $1",
-          [assessmentId],
-        );
-
-        if (publish_mode === "all") {
-          for (const student of students.rows) {
-            await upsertStudentAccess(student.student_id, assessmentId, true);
-          }
-        } else {
-          if (!Array.isArray(student_ids) || student_ids.length === 0) {
-            await db.query("ROLLBACK");
-            return res.status(400).json({
-              error:
-                "student_ids must be a non-empty array for selected publish",
-            });
-          }
-
-          const enrolled = await db.query(
-            "SELECT student_id FROM student_course WHERE course_id = $1 AND student_id = ANY($2::int[])",
-            [courseId, student_ids],
+        await withTransaction(async (client) => {
+          await client.query(
+            "UPDATE assessment SET is_published = true WHERE assessment_id = $1",
+            [assessmentId],
           );
 
-          if (enrolled.rows.length !== student_ids.length) {
-            await db.query("ROLLBACK");
-            return res.status(400).json({
-              error: "One or more students are not enrolled in this course",
-            });
-          }
+          if (publish_mode === "all") {
+            for (const student of students.rows) {
+              await upsertStudentAccess(
+                student.student_id,
+                assessmentId,
+                true,
+                client,
+              );
+            }
+          } else {
+            if (!Array.isArray(student_ids) || student_ids.length === 0) {
+              throw txHttpError(
+                400,
+                "student_ids must be a non-empty array for selected publish",
+              );
+            }
 
-          for (const studentId of student_ids) {
-            await upsertStudentAccess(studentId, assessmentId, true);
-          }
-        }
+            const enrolled = await client.query(
+              "SELECT student_id FROM student_course WHERE course_id = $1 AND student_id = ANY($2::int[])",
+              [courseId, student_ids],
+            );
 
-        await db.query("COMMIT");
+            if (enrolled.rows.length !== student_ids.length) {
+              throw txHttpError(
+                400,
+                "One or more students are not enrolled in this course",
+              );
+            }
+
+            for (const studentId of student_ids) {
+              await upsertStudentAccess(studentId, assessmentId, true, client);
+            }
+          }
+        });
       } catch (transactionError) {
-        await db.query("ROLLBACK");
+        if (transactionError.statusCode) {
+          return res.status(transactionError.statusCode).json({
+            error: transactionError.message,
+          });
+        }
         throw transactionError;
       }
 
@@ -885,97 +896,99 @@ export const submitAssessment = async (req, res) => {
   }
 
   try {
-    await db.query("BEGIN");
-
-    // Verify assessment exists
-    const assessment = await db.query(
-      "SELECT assessment_id FROM assessment WHERE assessment_id = $1",
-      [assessmentId],
-    );
-
-    if (assessment.rows.length === 0) {
-      await db.query("ROLLBACK");
-      return res.status(404).json({ error: "Assessment not found" });
-    }
-
-    // Get all questions
-    const questions = await db.query(
-      "SELECT question_id FROM question WHERE assessment_id = $1",
-      [assessmentId],
-    );
-
-    if (questions.rows.length === 0) {
-      await db.query("ROLLBACK");
-      return res.status(404).json({ error: "Questions not found" });
-    }
-
-    // Check whether the student has already submitted
-    const existingSubmission = await db.query(
-      `SELECT id
-       FROM student_assessment
-       WHERE student_id = $1
-         AND assessment_id = $2`,
-      [userId, assessmentId],
-    );
-
-    let message;
-
-    if (existingSubmission.rows.length > 0) {
-      await db.query(
-        `UPDATE student_assessment
-         SET date_submitted = $1,
-             time_submitted = $2
-         WHERE student_id = $3
-           AND assessment_id = $4`,
-        [todayDate, todayTime, userId, assessmentId],
+    const message = await withTransaction(async (client) => {
+      // Verify assessment exists
+      const assessment = await client.query(
+        "SELECT assessment_id FROM assessment WHERE assessment_id = $1",
+        [assessmentId],
       );
 
-      message = "Assessment Updated Successfully";
-    } else {
-      await db.query(
-        `INSERT INTO student_assessment
-          (grade, percent, student_id, assessment_id, date_submitted, time_submitted)
-         VALUES
-          (NULL, NULL, $1, $2, $3, $4)`,
-        [userId, assessmentId, todayDate, todayTime],
+      if (assessment.rows.length === 0) {
+        throw txHttpError(404, "Assessment not found");
+      }
+
+      // Get all questions
+      const questions = await client.query(
+        "SELECT question_id FROM question WHERE assessment_id = $1",
+        [assessmentId],
       );
 
-      message = "Assessment Submitted Successfully";
-    }
+      if (questions.rows.length === 0) {
+        throw txHttpError(404, "Questions not found");
+      }
 
-    // Insert or update each answer
-    for (const question of questions.rows) {
-      const questionId = question.question_id;
-
-      const rawAnswer =
-        answersByQuestion[questionId]?.answer ??
-        answersByQuestion[String(questionId)]?.answer;
-
-      const answer =
-        rawAnswer === undefined || rawAnswer === null ? "" : String(rawAnswer);
-
-      await db.query(
-        `
-        INSERT INTO student_question_answer
-          (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
-        VALUES
-          (NULL, $1, NULL, NULL, $2, $3)
-        ON CONFLICT (student_id, question_id)
-        DO UPDATE SET
-          answer = EXCLUDED.answer,
-          grade = EXCLUDED.grade,
-          active_time_sec = EXCLUDED.active_time_sec,
-          stale_time_sec = EXCLUDED.stale_time_sec
-        `,
-        [answer, userId, questionId],
+      // Check whether the student has already submitted
+      const existingSubmission = await client.query(
+        `SELECT id
+         FROM student_assessment
+         WHERE student_id = $1
+           AND assessment_id = $2`,
+        [userId, assessmentId],
       );
-    }
 
-    await db.query("COMMIT");
+      let submitMessage;
+
+      if (existingSubmission.rows.length > 0) {
+        await client.query(
+          `UPDATE student_assessment
+           SET date_submitted = $1,
+               time_submitted = $2
+           WHERE student_id = $3
+             AND assessment_id = $4`,
+          [todayDate, todayTime, userId, assessmentId],
+        );
+
+        submitMessage = "Assessment Updated Successfully";
+      } else {
+        await client.query(
+          `INSERT INTO student_assessment
+            (grade, percent, student_id, assessment_id, date_submitted, time_submitted)
+           VALUES
+            (NULL, NULL, $1, $2, $3, $4)`,
+          [userId, assessmentId, todayDate, todayTime],
+        );
+
+        submitMessage = "Assessment Submitted Successfully";
+      }
+
+      // Insert or update each answer
+      for (const question of questions.rows) {
+        const questionId = question.question_id;
+
+        const rawAnswer =
+          answersByQuestion[questionId]?.answer ??
+          answersByQuestion[String(questionId)]?.answer;
+
+        const answer =
+          rawAnswer === undefined || rawAnswer === null
+            ? ""
+            : String(rawAnswer);
+
+        await client.query(
+          `
+          INSERT INTO student_question_answer
+            (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
+          VALUES
+            (NULL, $1, NULL, NULL, $2, $3)
+          ON CONFLICT (student_id, question_id)
+          DO UPDATE SET
+            answer = EXCLUDED.answer,
+            grade = EXCLUDED.grade,
+            active_time_sec = EXCLUDED.active_time_sec,
+            stale_time_sec = EXCLUDED.stale_time_sec
+          `,
+          [answer, userId, questionId],
+        );
+      }
+
+      return submitMessage;
+    });
 
     return res.status(200).json({ message });
   } catch (error) {
-    await db.query("ROLLBACK");
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
 
     console.error(error);
 
@@ -1122,90 +1135,79 @@ export const saveStudentGrades = async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    await db.query("BEGIN");
+    await withTransaction(async (client) => {
+      for (const entry of grades) {
+        const studentId = Number(entry.studentId);
+        const assessmentId = Number(entry.assessmentId);
+        const grade = entry.grade;
 
-    for (const entry of grades) {
-      const studentId = Number(entry.studentId);
-      const assessmentId = Number(entry.assessmentId);
-      const grade = entry.grade;
+        if (
+          !studentId ||
+          !assessmentId ||
+          grade === "" ||
+          grade === null ||
+          grade === undefined
+        ) {
+          continue;
+        }
 
-      if (
-        !studentId ||
-        !assessmentId ||
-        grade === "" ||
-        grade === null ||
-        grade === undefined
-      ) {
-        continue;
-      }
+        const numericGrade = Number(grade);
+        if (Number.isNaN(numericGrade)) {
+          throw txHttpError(400, "Grade must be a number");
+        }
 
-      const numericGrade = Number(grade);
-      if (Number.isNaN(numericGrade)) {
-        await db.query("ROLLBACK");
-        return res.status(400).json({ error: "Grade must be a number" });
-      }
-
-      const assessment = await db.query(
-        `SELECT assessment_id, max_grade, course_id
-         FROM assessment
-         WHERE assessment_id = $1 AND course_id = $2`,
-        [assessmentId, courseId],
-      );
-      if (assessment.rows.length === 0) {
-        await db.query("ROLLBACK");
-        return res.status(400).json({ error: "Invalid assessment for course" });
-      }
-
-      const maxGrade = Number(assessment.rows[0].max_grade);
-      if (numericGrade < 0 || numericGrade > maxGrade) {
-        await db.query("ROLLBACK");
-        return res.status(400).json({
-          error: `Grade must be between 0 and ${maxGrade}`,
-        });
-      }
-
-      const percent = maxGrade > 0 ? (numericGrade / maxGrade) * 100 : 0;
-
-      const enrollment = await db.query(
-        `SELECT 1 FROM student_course WHERE student_id = $1 AND course_id = $2`,
-        [studentId, courseId],
-      );
-      if (enrollment.rows.length === 0) {
-        await db.query("ROLLBACK");
-        return res
-          .status(400)
-          .json({ error: "Student not enrolled in course" });
-      }
-
-      const existing = await db.query(
-        `SELECT id FROM student_assessment
-         WHERE student_id = $1 AND assessment_id = $2`,
-        [studentId, assessmentId],
-      );
-
-      if (existing.rows.length > 0) {
-        await db.query(
-          `UPDATE student_assessment
-           SET grade = $1, percent = $2
-           WHERE student_id = $3 AND assessment_id = $4`,
-          [numericGrade, percent, studentId, assessmentId],
+        const assessment = await client.query(
+          `SELECT assessment_id, max_grade, course_id
+           FROM assessment
+           WHERE assessment_id = $1 AND course_id = $2`,
+          [assessmentId, courseId],
         );
-      } else {
-        await db.query(
-          `INSERT INTO student_assessment (grade, percent, student_id, assessment_id)
-           VALUES ($1, $2, $3, $4)`,
-          [numericGrade, percent, studentId, assessmentId],
-        );
-      }
-    }
+        if (assessment.rows.length === 0) {
+          throw txHttpError(400, "Invalid assessment for course");
+        }
 
-    await db.query("COMMIT");
+        const maxGrade = Number(assessment.rows[0].max_grade);
+        if (numericGrade < 0 || numericGrade > maxGrade) {
+          throw txHttpError(400, `Grade must be between 0 and ${maxGrade}`);
+        }
+
+        const percent = maxGrade > 0 ? (numericGrade / maxGrade) * 100 : 0;
+
+        const enrollment = await client.query(
+          `SELECT 1 FROM student_course WHERE student_id = $1 AND course_id = $2`,
+          [studentId, courseId],
+        );
+        if (enrollment.rows.length === 0) {
+          throw txHttpError(400, "Student not enrolled in course");
+        }
+
+        const existing = await client.query(
+          `SELECT id FROM student_assessment
+           WHERE student_id = $1 AND assessment_id = $2`,
+          [studentId, assessmentId],
+        );
+
+        if (existing.rows.length > 0) {
+          await client.query(
+            `UPDATE student_assessment
+             SET grade = $1, percent = $2
+             WHERE student_id = $3 AND assessment_id = $4`,
+            [numericGrade, percent, studentId, assessmentId],
+          );
+        } else {
+          await client.query(
+            `INSERT INTO student_assessment (grade, percent, student_id, assessment_id)
+             VALUES ($1, $2, $3, $4)`,
+            [numericGrade, percent, studentId, assessmentId],
+          );
+        }
+      }
+    });
+
     return res.status(200).json({ message: "Grades saved successfully" });
   } catch (error) {
-    try {
-      await db.query("ROLLBACK");
-    } catch {
-      // No active transaction to roll back.
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
     }
     console.log("Error: ", error);
     return res.status(500).json({ error: "Failed to save grades" });
@@ -1357,112 +1359,110 @@ export const saveQuestionGradesForStudent = async (req, res) => {
 
     const assessment = assessmentResult.rows[0];
     const assessmentMaxGrade = Number(assessment.max_grade);
-    let totalGrade = 0;
 
-    await db.query("BEGIN");
+    const { totalGrade, percent } = await withTransaction(async (client) => {
+      let runningTotal = 0;
 
-    for (const entry of grades) {
-      const questionId = Number(entry.questionId);
-      const grade = entry.grade;
+      for (const entry of grades) {
+        const questionId = Number(entry.questionId);
+        const grade = entry.grade;
 
-      if (
-        !questionId ||
-        grade === "" ||
-        grade === null ||
-        grade === undefined
-      ) {
-        continue;
+        if (
+          !questionId ||
+          grade === "" ||
+          grade === null ||
+          grade === undefined
+        ) {
+          continue;
+        }
+
+        const numericGrade = Number(grade);
+        if (Number.isNaN(numericGrade)) {
+          throw txHttpError(400, "Grade must be a number");
+        }
+
+        const questionResult = await client.query(
+          `SELECT question_id, max_grade
+           FROM question
+           WHERE question_id = $1 AND assessment_id = $2`,
+          [questionId, assessmentId],
+        );
+        if (questionResult.rows.length === 0) {
+          throw txHttpError(400, "Invalid question for assessment");
+        }
+
+        const questionMaxGrade = Number(questionResult.rows[0].max_grade);
+        if (numericGrade < 0 || numericGrade > questionMaxGrade) {
+          throw txHttpError(
+            400,
+            `Grade must be between 0 and ${questionMaxGrade}`,
+          );
+        }
+
+        const answerResult = await client.query(
+          `SELECT id FROM student_question_answer
+           WHERE student_id = $1 AND question_id = $2
+           ORDER BY id DESC
+           LIMIT 1`,
+          [studentId, questionId],
+        );
+
+        if (answerResult.rows.length > 0) {
+          await client.query(
+            `UPDATE student_question_answer
+             SET grade = $1
+             WHERE id = $2`,
+            [numericGrade, answerResult.rows[0].id],
+          );
+        } else {
+          await client.query(
+            `INSERT INTO student_question_answer
+              (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [numericGrade, "", 0, 0, studentId, questionId],
+          );
+        }
+
+        runningTotal += numericGrade;
       }
 
-      const numericGrade = Number(grade);
-      if (Number.isNaN(numericGrade)) {
-        await db.query("ROLLBACK");
-        return res.status(400).json({ error: "Grade must be a number" });
-      }
+      const computedPercent =
+        assessmentMaxGrade > 0
+          ? (runningTotal / assessmentMaxGrade) * 100
+          : 0;
 
-      const questionResult = await db.query(
-        `SELECT question_id, max_grade
-         FROM question
-         WHERE question_id = $1 AND assessment_id = $2`,
-        [questionId, assessmentId],
+      const existingSubmission = await client.query(
+        `SELECT id FROM student_assessment
+         WHERE student_id = $1 AND assessment_id = $2`,
+        [studentId, assessmentId],
       );
-      if (questionResult.rows.length === 0) {
-        await db.query("ROLLBACK");
-        return res
-          .status(400)
-          .json({ error: "Invalid question for assessment" });
-      }
 
-      const questionMaxGrade = Number(questionResult.rows[0].max_grade);
-      if (numericGrade < 0 || numericGrade > questionMaxGrade) {
-        await db.query("ROLLBACK");
-        return res.status(400).json({
-          error: `Grade must be between 0 and ${questionMaxGrade}`,
-        });
-      }
-
-      const answerResult = await db.query(
-        `SELECT id FROM student_question_answer
-         WHERE student_id = $1 AND question_id = $2
-         ORDER BY id DESC
-         LIMIT 1`,
-        [studentId, questionId],
-      );
-
-      if (answerResult.rows.length > 0) {
-        await db.query(
-          `UPDATE student_question_answer
-           SET grade = $1
-           WHERE id = $2`,
-          [numericGrade, answerResult.rows[0].id],
+      if (existingSubmission.rows.length > 0) {
+        await client.query(
+          `UPDATE student_assessment
+           SET grade = $1, percent = $2
+           WHERE student_id = $3 AND assessment_id = $4`,
+          [runningTotal, computedPercent, studentId, assessmentId],
         );
       } else {
-        await db.query(
-          `INSERT INTO student_question_answer
-            (grade, answer, active_time_sec, stale_time_sec, student_id, question_id)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [numericGrade, "", 0, 0, studentId, questionId],
+        await client.query(
+          `INSERT INTO student_assessment (grade, percent, student_id, assessment_id)
+           VALUES ($1, $2, $3, $4)`,
+          [runningTotal, computedPercent, studentId, assessmentId],
         );
       }
 
-      totalGrade += numericGrade;
-    }
+      return { totalGrade: runningTotal, percent: computedPercent };
+    });
 
-    const percent =
-      assessmentMaxGrade > 0 ? (totalGrade / assessmentMaxGrade) * 100 : 0;
-
-    const existingSubmission = await db.query(
-      `SELECT id FROM student_assessment
-       WHERE student_id = $1 AND assessment_id = $2`,
-      [studentId, assessmentId],
-    );
-
-    if (existingSubmission.rows.length > 0) {
-      await db.query(
-        `UPDATE student_assessment
-         SET grade = $1, percent = $2
-         WHERE student_id = $3 AND assessment_id = $4`,
-        [totalGrade, percent, studentId, assessmentId],
-      );
-    } else {
-      await db.query(
-        `INSERT INTO student_assessment (grade, percent, student_id, assessment_id)
-         VALUES ($1, $2, $3, $4)`,
-        [totalGrade, percent, studentId, assessmentId],
-      );
-    }
-
-    await db.query("COMMIT");
     return res.status(200).json({
       message: "Question grades saved successfully",
       totalGrade,
       percent,
     });
   } catch (error) {
-    try {
-      await db.query("ROLLBACK");
-    } catch {
-      // No active transaction to roll back.
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
     }
     console.log("Error: ", error);
     return res.status(500).json({ error: "Failed to save question grades" });

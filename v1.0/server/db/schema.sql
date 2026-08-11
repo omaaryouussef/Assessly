@@ -1,17 +1,19 @@
-CREATE TYPE role_enum AS ENUM ('INSTRUCTOR' , 'STUDENT', 'TA', 'ADMIN');
-CREATE TYPE assess_type_enum AS ENUM ('EXAM' , 'QUIZ', 'ASSIGNMENT');
-CREATE TYPE question_type_enum AS ENUM ('CODING' , 'ESSAY', 'MCQ');
+-- Assessly database schema (fresh install)
+-- Apply once against an empty PostgreSQL database.
 
-CREATE TABLE Users
-(
+CREATE TYPE role_enum AS ENUM ('INSTRUCTOR', 'STUDENT', 'TA', 'ADMIN');
+CREATE TYPE assess_type_enum AS ENUM ('EXAM', 'QUIZ', 'ASSIGNMENT');
+CREATE TYPE question_type_enum AS ENUM ('CODING', 'ESSAY', 'MCQ');
+
+CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     auc_id CHAR(9) UNIQUE NOT NULL,
     name VARCHAR(50) NOT NULL,
     email VARCHAR(50) UNIQUE NOT NULL,
     google_id VARCHAR(50) UNIQUE,
     hashed_password VARCHAR(64),
-    is_verified BOOLEAN NULL,
-    role ROLE_ENUM NOT NULL,
+    is_verified BOOLEAN NOT NULL DEFAULT false,
+    role role_enum NOT NULL,
     department VARCHAR(50) NOT NULL
 );
 
@@ -39,41 +41,35 @@ CREATE TABLE instructor_invites (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Course(
+CREATE TABLE course (
     course_id SERIAL PRIMARY KEY,
-    instructor_id INT NOT NULL,
-    enrollementKey VARCHAR(50) NOT NULL,
-    courseTitle VARCHAR(50) NOT NULL,
-    num_student INT NOT NULL,
-    IsOpenEnrollement BOOLEAN NOT NULL,
+    instructor_id INT NOT NULL REFERENCES users(user_id),
+    enrollementkey VARCHAR(50) NOT NULL,
+    coursetitle VARCHAR(50) NOT NULL,
+    max_num_students INT NOT NULL DEFAULT 0,
+    num_enrolled_students INT NOT NULL DEFAULT 0,
+    isopenenrollement BOOLEAN NOT NULL,
     classroom VARCHAR(32) NOT NULL DEFAULT '',
-    meeting_time VARCHAR(45) NOT NULL DEFAULT '',
-    FOREIGN KEY (instructor_id) REFERENCES Users(user_id)
+    meeting_time VARCHAR(45) NOT NULL DEFAULT ''
 );
 
-CREATE TABLE TA_COURSE(
-	id SERIAL NOT NULL,
-    course_id INT NOT NULL,
-    TA_id INT NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (course_id) REFERENCES Course(course_id),
-    FOREIGN KEY (TA_id) REFERENCES Users(user_id)
+CREATE TABLE ta_course (
+    id SERIAL PRIMARY KEY,
+    course_id INT NOT NULL REFERENCES course(course_id) ON DELETE CASCADE,
+    ta_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    UNIQUE (course_id, ta_id)
 );
 
-CREATE TABLE Student_Course
-(
-    id SERIAL NOT NULL,
-    course_id INT NOT NULL,
-    student_id INT NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (course_id) REFERENCES Course(course_id),
-    FOREIGN KEY (student_id) REFERENCES Users(user_id)
+CREATE TABLE student_course (
+    id SERIAL PRIMARY KEY,
+    course_id INT NOT NULL REFERENCES course(course_id) ON DELETE CASCADE,
+    student_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    UNIQUE (course_id, student_id)
 );
 
-CREATE TABLE Assessment
-(
-    assessment_id SERIAL NOT NULL,
-    assess_type ASSESS_TYPE_ENUM NOT NULL,
+CREATE TABLE assessment (
+    assessment_id SERIAL PRIMARY KEY,
+    assess_type assess_type_enum NOT NULL,
     title VARCHAR(50) NOT NULL,
     duration INT NOT NULL,
     max_grade FLOAT NOT NULL,
@@ -81,106 +77,91 @@ CREATE TABLE Assessment
     due_time TIME,
     is_published BOOLEAN NOT NULL DEFAULT false,
     is_closed BOOLEAN NOT NULL DEFAULT false,
-    course_id INT NOT NULL,
-    PRIMARY KEY (assessment_id),
-    FOREIGN KEY (course_id) REFERENCES Course(course_id)
+    course_id INT NOT NULL REFERENCES course(course_id) ON DELETE CASCADE
 );
 
-CREATE TABLE Security_Settings
-(
-    id SERIAL NOT NULL,
-    windowSwitching BOOLEAN NOT NULL,
-    clipboardAccess BOOLEAN NOT NULL,
-    screenSnapshot BOOLEAN NOT NULL,
-    questionStats BOOLEAN NOT NULL,
-    networkRestriction BOOLEAN NOT NULL DEFAULT false,
-    processMonitoring BOOLEAN NOT NULL DEFAULT false,
-    assessment_id INT NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (assessment_id) REFERENCES Assessment(assessment_id)
+CREATE TABLE security_settings (
+    id SERIAL PRIMARY KEY,
+    windowswitching BOOLEAN NOT NULL,
+    clipboardaccess BOOLEAN NOT NULL,
+    screensnapshot BOOLEAN NOT NULL,
+    questionstats BOOLEAN NOT NULL,
+    networkrestriction BOOLEAN NOT NULL DEFAULT false,
+    processmonitoring BOOLEAN NOT NULL DEFAULT false,
+    assessment_id INT NOT NULL REFERENCES assessment(assessment_id) ON DELETE CASCADE
 );
 
-CREATE TABLE Question
-(
-    question_id SERIAL NOT NULL,
-    question_type QUESTION_TYPE_ENUM NOT NULL,
-    prompt VARCHAR(1000) NOT NULL,
+CREATE TABLE question (
+    question_id SERIAL PRIMARY KEY,
+    question_type question_type_enum NOT NULL,
+    prompt TEXT NOT NULL,
     max_grade FLOAT NOT NULL,
-    num_choices INT NOT NULL,
-    prog_lang VARCHAR(30) NOT NULL,
-    lang_version VARCHAR(30) NOT NULL,
-    assessment_id INT NOT NULL,
-    PRIMARY KEY (question_id),
-    FOREIGN KEY (assessment_id) REFERENCES Assessment(assessment_id)
+    num_choices INT NOT NULL DEFAULT 0,
+    prog_lang VARCHAR(30) NOT NULL DEFAULT '',
+    lang_version VARCHAR(30) NOT NULL DEFAULT '',
+    code_snippet TEXT,
+    time_limit_sec INT,
+    memory_limit_bytes BIGINT,
+    assessment_id INT NOT NULL REFERENCES assessment(assessment_id) ON DELETE CASCADE
 );
 
-CREATE TABLE Student_Assessment
-(
-    id SERIAL NOT NULL,
-    grade FLOAT NOT NULL,
-    percent FLOAT NOT NULL,
-    student_id INT NOT NULL,
-    assessment_id INT NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (student_id) REFERENCES Users(user_id),
-    FOREIGN KEY (assessment_id) REFERENCES Assessment(assessment_id)
-);
-
-CREATE TABLE Student_Question_Answer
-(
-    id SERIAL NOT NULL,
-    grade FLOAT NOT NULL,
-    answer VARCHAR(1000) NOT NULL,
-    active_time_sec INT NOT NULL,
-    stale_time_sec INT NOT NULL,
-    student_id INT NOT NULL,
-    question_id INT NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (student_id) REFERENCES Users(user_id),
-    FOREIGN KEY (question_id) REFERENCES Question(question_id)
-);
-
-CREATE TABLE choice
-(
-    choice_id SERIAL NOT NULL,
+CREATE TABLE choice (
+    choice_id SERIAL PRIMARY KEY,
     is_true_answer BOOLEAN NOT NULL,
-    choice_body VARCHAR(1000) NOT NULL,
-    question_id INT NOT NULL,
-    PRIMARY KEY (choice_id),
-    FOREIGN KEY (question_id) REFERENCES Question(question_id)
+    choice_body TEXT NOT NULL,
+    question_id INT NOT NULL REFERENCES question(question_id) ON DELETE CASCADE
 );
 
+CREATE TABLE student_assessment (
+    id SERIAL PRIMARY KEY,
+    grade FLOAT,
+    percent FLOAT,
+    student_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    assessment_id INT NOT NULL REFERENCES assessment(assessment_id) ON DELETE CASCADE,
+    date_submitted DATE,
+    time_submitted TIME,
+    UNIQUE (student_id, assessment_id)
+);
 
-CREATE TABLE student_access_assessments(
-id SERIAL NOT NULL PRIMARY KEY,
-can_access BOOLEAN NOT NULL,
-student_id INT NOT NULL,
-assessment_id INT NOT NULL,
-FOREIGN KEY (student_id) REFERENCES users(user_id),
-FOREIGN KEY (assessment_id) REFERENCES assessment(assessment_id)
-)
+CREATE TABLE student_question_answer (
+    id SERIAL PRIMARY KEY,
+    grade FLOAT,
+    answer TEXT NOT NULL DEFAULT '',
+    active_time_sec INT,
+    stale_time_sec INT,
+    student_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    question_id INT NOT NULL REFERENCES question(question_id) ON DELETE CASCADE,
+    UNIQUE (student_id, question_id)
+);
 
+CREATE TABLE student_access_assessments (
+    id SERIAL PRIMARY KEY,
+    can_access BOOLEAN NOT NULL,
+    student_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    assessment_id INT NOT NULL REFERENCES assessment(assessment_id) ON DELETE CASCADE,
+    UNIQUE (student_id, assessment_id)
+);
 
-CREATE TABLE question_feedback(
-id SERIAL PRIMARY KEY,
-feedback VARCHAR(1000), 
-resolved BOOLEAN DEFAULT FALSE,
-user_id INT NOT NULL,
-question_id INT NOT NULL,
-student_question_answer_id INT NOT NULL,
-FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-FOREIGN KEY (question_id) REFERENCES question(question_id) ON DELETE CASCADE,
-FOREIGN KEY (student_question_answer_id) REFERENCES student_question_answer(id) ON DELETE CASCADE);
+CREATE TABLE question_feedback (
+    id SERIAL PRIMARY KEY,
+    feedback TEXT,
+    resolved BOOLEAN DEFAULT false,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    question_id INT NOT NULL REFERENCES question(question_id) ON DELETE CASCADE,
+    student_question_answer_id INT NOT NULL REFERENCES student_question_answer(id) ON DELETE CASCADE
+);
 
-CREATE TABLE Proctoring_Event (
+CREATE TABLE proctoring_event (
     id SERIAL PRIMARY KEY,
     student_assessment_id INT NOT NULL REFERENCES student_assessment(id) ON DELETE CASCADE,
-    event_type VARCHAR(50) NOT NULL,  
-    severity VARCHAR(20) NOT NULL,   
+    event_type VARCHAR(50) NOT NULL,
+    severity VARCHAR(20) NOT NULL,
     metadata JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- When a student_assessment row is deleted, remove that student's answers
+-- for questions belonging to the same assessment.
 CREATE OR REPLACE FUNCTION cascade_student_assessment_delete()
 RETURNS TRIGGER AS $$
 BEGIN
