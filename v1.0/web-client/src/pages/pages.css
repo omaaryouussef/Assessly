@@ -7474,6 +7474,220 @@ html[data-exam-mode='true'] #root {
   }
 }
 
+/* Download student app page */
+.download-page .download-brand {
+  text-decoration: none;
+  color: inherit;
+}
+
+.download-page .landing-brand-tagline {
+  text-decoration: none;
+}
+
+.download-main {
+  display: flex;
+  justify-content: center;
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.download-card {
+  width: min(100%, 42rem);
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  text-align: center;
+}
+
+.download-card-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1.25rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #135bec 0%, #2563eb 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+}
+
+.download-card h1 {
+  margin: 0 0 0.875rem;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--bold-text-color);
+  line-height: 1.25;
+}
+
+.download-card-lead {
+  margin: 0 auto 2rem;
+  max-width: 34rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--light-text-color);
+}
+
+.download-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin-bottom: 1.75rem;
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: var(--bold-text-color);
+  text-decoration: none;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+  box-sizing: border-box;
+}
+
+.download-btn svg {
+  flex-shrink: 0;
+  font-size: 1.75rem;
+}
+
+.download-btn span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.download-btn strong {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.download-btn small {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--light-text-color);
+  line-height: 1.35;
+}
+
+.download-btn--win {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.download-btn--win small {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.download-btn--win:hover {
+  background: #003a5f;
+  border-color: #003a5f;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 74, 119, 0.22);
+}
+
+.download-btn--mac {
+  background: #f8fafc;
+}
+
+.download-btn--mac:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.download-btn--recommended {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.28);
+}
+
+.download-btn--unavailable {
+  opacity: 0.72;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  border-style: dashed;
+}
+
+.download-btn--unavailable:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.download-notes {
+  padding-top: 0.5rem;
+  border-top: 1px solid #eef2f6;
+  text-align: left;
+}
+
+.download-notes p {
+  margin: 0 0 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--light-text-color);
+}
+
+.download-notes p:last-child {
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.download-note-muted {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e !important;
+}
+
+.download-github-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.download-github-link:hover {
+  text-decoration: underline;
+}
+
+@media (min-width: 640px) {
+  .download-actions {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .download-btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .download-card {
+    padding: 1.75rem 1.25rem;
+    border-radius: 16px;
+  }
+
+  .download-main {
+    padding-top: 1.25rem;
+    padding-bottom: 2.5rem;
+  }
+}
+
 /* Admin instructor invites */
 .admin-invites-page {
   display: flex;

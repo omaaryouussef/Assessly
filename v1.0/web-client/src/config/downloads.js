@@ -4,14 +4,14 @@ const DESKTOP_VERSION = '1.0.0'
 
 export function getDesktopDownloads() {
   const releaseBase = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases`
+  const macUrl = import.meta.env.VITE_DESKTOP_DOWNLOAD_MAC || ''
 
   return {
     win:
       import.meta.env.VITE_DESKTOP_DOWNLOAD_WIN ||
       `${releaseBase}/latest/download/Assessly-Setup-${DESKTOP_VERSION}.exe`,
-    mac:
-      import.meta.env.VITE_DESKTOP_DOWNLOAD_MAC ||
-      `${releaseBase}/latest/download/Assessly-${DESKTOP_VERSION}.dmg`,
+    mac: macUrl,
+    macAvailable: Boolean(macUrl),
     releasesPage: `${releaseBase}/latest`,
   }
 }
