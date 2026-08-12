@@ -141,6 +141,26 @@ npm run build:win   # Windows installer (.exe)
 npm run build:mac   # macOS disk image (.dmg)
 ```
 
+Publish to GitHub Releases (uploads installer + auto-update metadata):
+
+```bash
+set GH_TOKEN=your_github_token
+npm run build:win:publish
+```
+
+See [`v1.0/desktop/RELEASE.md`](v1.0/desktop/RELEASE.md) for full release and Vercel download URL setup.
+
+**Student downloads**
+
+The landing page links to `/download-student-app`, which offers Windows and macOS installers from GitHub Releases. Optional Vercel overrides:
+
+```env
+VITE_DESKTOP_DOWNLOAD_WIN=https://github.com/omaaryouussef/Assessly/releases/download/v1.0.0/Assessly-Setup-1.0.0.exe
+VITE_DESKTOP_DOWNLOAD_MAC=https://github.com/omaaryouussef/Assessly/releases/download/v1.0.0/Assessly-1.0.0.dmg
+```
+
+Installed apps check GitHub Releases on startup via `electron-updater`.
+
 **Code signing**
 
 - Windows: set `CSC_LINK` and `CSC_KEY_PASSWORD` before building.

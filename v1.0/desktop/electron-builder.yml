@@ -40,5 +40,6 @@ dmg:
   title: Assessly ${version}
 
 publish:
-  provider: generic
-  url: https://assessly.example.com/downloads
+  provider: github
+  owner: omaaryouussef
+  repo: Assessly

@@ -4945,7 +4945,9 @@ html[data-exam-mode='true'] #root {
   background: #eff6ff;
 }
 
-.take-assessment-page .take-assessment-limit--time .take-assessment-limit-value {
+.take-assessment-page
+  .take-assessment-limit--time
+  .take-assessment-limit-value {
   color: #1d4ed8;
 }
 
@@ -4954,7 +4956,9 @@ html[data-exam-mode='true'] #root {
   background: #f5f3ff;
 }
 
-.take-assessment-page .take-assessment-limit--memory .take-assessment-limit-value {
+.take-assessment-page
+  .take-assessment-limit--memory
+  .take-assessment-limit-value {
   color: #6d28d9;
 }
 

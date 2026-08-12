@@ -38,6 +38,7 @@ import VerifyEmail from '../pages/auth/VerifyEmail'
 import AcceptInvite from '../pages/auth/AcceptInvite'
 import AdminInvitesPage from '../pages/Admin/AdminInvitesPage'
 import LandingPage from '../pages/LandingPage.jsx'
+import DownloadStudentAppPage from '../pages/DownloadStudentAppPage.jsx'
 import ForgotPassword from '../pages/auth/ForgotPassword'
 import ResetPassword from '../pages/auth/ResetPassword'
 
@@ -45,7 +46,13 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route>
       {!isDesktopApp() ? (
-        <Route path="landing" element={<LandingPage />} />
+        <>
+          <Route path="landing" element={<LandingPage />} />
+          <Route
+            path="download-student-app"
+            element={<DownloadStudentAppPage />}
+          />
+        </>
       ) : null}
       <Route path="login" element={<LoginView />} />
       <Route path="register" element={<RegisterView />} />

@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getApiBaseUrl, setApiBaseUrl } from './config.js'
@@ -120,6 +121,23 @@ function registerIpcHandlers() {
   })
 }
 
+function setupAutoUpdater() {
+  if (isDev) {
+    return
+  }
+
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('error', (error) => {
+    console.error('Auto-update failed:', error.message)
+  })
+
+  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    console.error('Update check failed:', error.message)
+  })
+}
+
 app.whenReady().then(() => {
   if (!isDev) {
     registerAppProtocol(getWebClientDistPath())
@@ -132,6 +150,7 @@ app.whenReady().then(() => {
 
   registerIpcHandlers()
   createMainWindow()
+  setupAutoUpdater()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
