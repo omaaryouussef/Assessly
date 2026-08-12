@@ -11,7 +11,7 @@ export function getDesktopDownloads() {
       import.meta.env.VITE_DESKTOP_DOWNLOAD_WIN ||
       `${releaseBase}/latest/download/Assessly-Setup-${DESKTOP_VERSION}.exe`,
     mac: macUrl,
-    macAvailable: Boolean(macUrl),
+    macAvailable: false,
     releasesPage: `${releaseBase}/latest`,
   }
 }

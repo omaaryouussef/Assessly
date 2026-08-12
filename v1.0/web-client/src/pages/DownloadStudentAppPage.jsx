@@ -99,8 +99,7 @@ function DownloadStudentAppPage() {
             )}
             <p>
               After installing, open Assessly and sign in with your student
-              account. On first launch, enter your institution&apos;s Assessly server
-              URL if prompted.
+              account. 
             </p>
             {!macAvailable ? (
               <p className="download-note-muted">
