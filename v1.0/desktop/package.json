@@ -9,13 +9,14 @@
   "scripts": {
     "dev": "electronmon .",
     "start": "electron .",
-    "build:web": "npm run build:electron --prefix ../web-client",
+    "build:web": "node ./scripts/sync-desktop-env.js && npm run build:electron --prefix ../web-client",
     "build:win": "npm run build:web && electron-builder --win --config electron-builder.yml",
     "build:mac": "npm run build:web && electron-builder --mac --config electron-builder.yml",
     "build:win:publish": "npm run build:web && electron-builder --win --publish always --config electron-builder.yml",
     "build:mac:publish": "npm run build:web && electron-builder --mac --publish always --config electron-builder.yml"
   },
   "dependencies": {
+    "electron-updater": "^6.8.3",
     "embedded-postgres": "^18.4.0-beta.17",
     "pg": "^8.20.0",
     "ps-list": "^8.1.1"
@@ -23,7 +24,6 @@
   "devDependencies": {
     "electron": "^43.0.0",
     "electron-builder": "^26.15.3",
-    "electron-updater": "^6.8.3",
     "electronmon": "^2.0.4"
   },
   "electronmon": {

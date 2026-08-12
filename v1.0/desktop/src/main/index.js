@@ -1,5 +1,4 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron'
-import { autoUpdater } from 'electron-updater'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getApiBaseUrl, setApiBaseUrl } from './config.js'
@@ -121,21 +120,25 @@ function registerIpcHandlers() {
   })
 }
 
-function setupAutoUpdater() {
+async function setupAutoUpdater() {
   if (isDev) {
     return
   }
 
-  autoUpdater.autoDownload = true
-  autoUpdater.autoInstallOnAppQuit = true
+  try {
+    const { autoUpdater } = await import('electron-updater')
 
-  autoUpdater.on('error', (error) => {
-    console.error('Auto-update failed:', error.message)
-  })
+    autoUpdater.autoDownload = true
+    autoUpdater.autoInstallOnAppQuit = true
 
-  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
-    console.error('Update check failed:', error.message)
-  })
+    autoUpdater.on('error', (error) => {
+      console.error('Auto-update failed:', error.message)
+    })
+
+    await autoUpdater.checkForUpdatesAndNotify()
+  } catch (error) {
+    console.error('Auto-update unavailable:', error.message)
+  }
 }
 
 app.whenReady().then(() => {

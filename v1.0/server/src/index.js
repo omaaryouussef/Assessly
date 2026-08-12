@@ -15,6 +15,9 @@ const defaultOrigins = [
     "app://assessly",
 ];
 
+// Always allowed — desktop Electron shell (even when CORS_ORIGINS is overridden on Railway).
+const alwaysAllowedOrigins = new Set(["app://assessly"]);
+
 function normalizeOrigin(origin) {
     return String(origin || "")
         .trim()
@@ -30,6 +33,10 @@ function isOriginAllowed(origin) {
     const normalized = normalizeOrigin(origin);
 
     if (!normalized || allowedOrigins.includes(normalized)) {
+        return true;
+    }
+
+    if (alwaysAllowedOrigins.has(normalized)) {
         return true;
     }
 

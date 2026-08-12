@@ -30,13 +30,18 @@ function AppRoot() {
 function Bootstrap() {
   const [ready, setReady] = useState(false)
   const [needsSetup, setNeedsSetup] = useState(false)
+  const [missingProductionApi, setMissingProductionApi] = useState(false)
 
   useEffect(() => {
     async function prepareDesktop() {
       await initApiBase()
 
       if (isDesktopApp() && !hasApiBase()) {
-        setNeedsSetup(true)
+        if (import.meta.env.DEV) {
+          setNeedsSetup(true)
+        } else {
+          setMissingProductionApi(true)
+        }
       }
 
       setReady(true)
@@ -47,6 +52,20 @@ function Bootstrap() {
 
   if (!ready) {
     return null
+  }
+
+  if (missingProductionApi) {
+    return (
+      <div className="desktop-setup">
+        <div className="desktop-setup__card">
+          <h1>Assessly desktop</h1>
+          <p className="desktop-setup__error">
+            This installer was built without a server URL. Contact your instructor
+            or reinstall from an official download link.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   if (needsSetup) {

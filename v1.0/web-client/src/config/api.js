@@ -33,13 +33,22 @@ export async function initApiBase() {
   }
 
   const bridge = getDesktopBridge()
+  const bakedBase = envBase.replace(/\/$/, '')
+
   if (!bridge?.getApiBaseUrl) {
     return resolvedBase
   }
 
-  const url = await bridge.getApiBaseUrl()
-  if (url) {
-    resolvedBase = url
+  const savedUrl = (await bridge.getApiBaseUrl())?.replace(/\/$/, '')
+
+  // Production installers bake the API URL — do not let an old dev setup override it.
+  if (bakedBase) {
+    resolvedBase = bakedBase
+    return resolvedBase
+  }
+
+  if (savedUrl) {
+    resolvedBase = savedUrl
   }
 
   return resolvedBase

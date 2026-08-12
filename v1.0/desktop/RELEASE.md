@@ -4,13 +4,23 @@ Build outputs land in `release/` after a successful build.
 
 ## Build installers (local)
 
-From `v1.0/desktop`:
+1. Set the API URL students will use (once per release build):
+
+```bash
+cd v1.0/web-client
+cp .env.desktop.example .env.desktop
+# VITE_API_BASE_URL=https://your-app.up.railway.app
+```
+
+2. From `v1.0/desktop`:
 
 ```bash
 npm install
 npm run build:win   # Windows → release/Assessly-Setup-1.0.0.exe
 npm run build:mac   # macOS → release/Assessly-1.0.0.dmg (requires Mac)
 ```
+
+Students who install that build **do not** enter a server URL — only sign in.
 
 ## Publish to GitHub Releases
 

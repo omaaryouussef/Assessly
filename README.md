@@ -131,9 +131,21 @@ cd v1.0/web-client && npm run dev
 cd v1.0/desktop && npm run dev
 ```
 
-On first launch, configure the API server URL (your hosted API, or `http://localhost:3011` for local development). Coding **Run** uses [Piston](https://github.com/engineer-man/piston) on that API host via `PISTON_API_URL`.
+On first launch in **local dev**, configure the API server URL if prompted (`http://localhost:3011`). **Production installers** bake in the Railway URL — students only install and sign in.
+
+Coding **Run** uses [Piston](https://github.com/engineer-man/piston) on that API host via `PISTON_API_URL`.
 
 ### Production builds
+
+1. Copy the desktop env file and set your **Railway API URL** (not Vercel):
+
+```bash
+cd v1.0/web-client
+cp .env.desktop.example .env.desktop
+# edit .env.desktop → VITE_API_BASE_URL=https://your-app.up.railway.app
+```
+
+2. Build the installer:
 
 ```bash
 cd v1.0/desktop
