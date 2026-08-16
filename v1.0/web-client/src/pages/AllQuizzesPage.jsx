@@ -16,7 +16,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
 import { formatDueDateTimeLabel, getAssessmentStatus } from '../utils/assessmentDue'
-
+import LoadingPage from '../components/LoadingPage'
 
 const QUIZ_ICONS = {
   CODING: faCode,
@@ -207,7 +207,7 @@ function AllQuizzesPage() {
   const [quizToEdit, setQuizToEdit] = useState(null)
   const [quizToDelete, setQuizToDelete] = useState(null)
   const canManage = user?.role === 'INSTRUCTOR' || user?.role === 'TA'
-
+  const [isLoading, setIsLoading] = useState(true)
   const fetchQuizzes = useCallback(async () => {
     const response = await fetch(
       `${getApiBase()}/api/assessments/quizzes/${courseId}`,
@@ -218,6 +218,7 @@ function AllQuizzesPage() {
     if (!response.ok) throw new Error('Failed to fetch quizzes')
     const data = await response.json()
     setQuizzesList(Array.isArray(data) ? data : [])
+    setIsLoading(false)
   }, [courseId, token])
 
   const fetchStudents = useCallback(async () => {
@@ -294,10 +295,14 @@ function AllQuizzesPage() {
   )
 
   useEffect(() => {
-    if (!courseId || !token) return
+    if (!courseId || !token) {
+      setIsLoading(false)
+      return
+    }
     fetchQuizzes().catch((error) => {
       console.error('Failed to fetch quizzes', error)
       setQuizzesList([])
+      setIsLoading(false)
     })
   }, [courseId, token, fetchQuizzes])
 
@@ -494,6 +499,9 @@ function AllQuizzesPage() {
       setActionErrMessage(error.message || 'Failed to delete quiz')
     }
   }
+  if (isLoading) {
+    return <LoadingPage message="Loading quizzes…" />
+  }
   return (
     <div className="assignments-page-container">
       <div className="course-special-header">
@@ -631,7 +639,7 @@ function AllQuizzesPage() {
               <strong>{quizToPublish.title}</strong>.
             </p>
             {isLoadingStudents ? (
-              <p>Loading students...</p>
+              <LoadingPage variant="inline" message="Loading students…" />
             ) : (
               <>
                 <label className="publish-student-row publish-student-row--select-all">

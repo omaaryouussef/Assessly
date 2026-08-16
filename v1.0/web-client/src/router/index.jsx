@@ -20,12 +20,10 @@ import AllQuizzesPage from '../pages/AllQuizzesPage'
 import AllExamsPage from '../pages/AllExamsPage'
 import AllAssignmentsPage from '../pages/AllAssignmentsPage'
 import AllCoursesPage from '../pages/AllCoursesPage'
-import AddStudentPage from '../pages/Instructor/AddStudentPage'
 import AssessmentStudioPage from '../pages/Instructor/AssessmentStudioPage'
 import CreateCoursePage from '../pages/Instructor/CreateCoursePage'
 import DeleteCoursePage from '../pages/Instructor/DeleteCoursePage'
 import EditCoursePage from '../pages/Instructor/EditCoursePage'
-import RemoveStudentPage from '../pages/Instructor/RemoveStudentPage'
 import ViewAllStudentsGradePage from '../pages/Instructor/ViewAllStudentsGradePage'
 import JoinCoursePage from '../pages/Student/JoinCoursePage'
 import TakeAssessmentPage from '../pages/Student/TakeAssessmentPage'
@@ -103,14 +101,9 @@ const router = createBrowserRouter(
 
           {/* Instructor only routes */}
           <Route element={<RoleGuard allowedRoles={['INSTRUCTOR']} />}>
-            <Route path="add-student" element={<AddStudentPage />} />
             <Route path="create-course" element={<CreateCoursePage />} />
             <Route path="delete-course" element={<DeleteCoursePage />} />
             <Route path="edit-course" element={<EditCoursePage />} />
-            <Route
-              path="course/:courseId/remove-student"
-              element={<RemoveStudentPage />}
-            />
           </Route>
 
           {/* TA and Student shared routes */}

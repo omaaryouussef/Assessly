@@ -31,6 +31,8 @@ import {
   clearDraft,
 } from '../../utils/takeAssessmentDraft'
 
+import LoadingPage from '../../components/LoadingPage'
+
 function getAssessmentListPath(courseId, assessType) {
   if (assessType === 'ASSIGNMENT') {
     return `/course/${courseId}/assignments`
@@ -275,6 +277,7 @@ function QuestionRow({
 }
 
 function TakeAssessmentPage() {
+  const [isLoading, setIsLoading] = useState(true)
   const { assessmentToTake: assessmentFromState } = useLocation().state ?? {}
   const { courseId, assessmentId } = useParams()
   const navigate = useNavigate()
@@ -481,7 +484,7 @@ function TakeAssessmentPage() {
 
   useEffect(() => {
     if (!resolvedAssessmentId || !token) return
-
+    setIsLoading(true)
     let cancelled = false
 
     const fetchAssessment = async () => {
@@ -592,6 +595,7 @@ function TakeAssessmentPage() {
         setAssessmentLoaded(true)
         setDraftResolved(true)
         setTimerTick((tick) => tick + 1)
+        setIsLoading(false)
       } catch (error) {
         console.error('Failed to load assessment', error)
         if (!cancelled) {
@@ -599,6 +603,7 @@ function TakeAssessmentPage() {
           setAssessmentLoaded(false)
           setDraftResolved(true)
         }
+        setIsLoading(false)
       }
     }
 
@@ -610,6 +615,7 @@ function TakeAssessmentPage() {
 
     return () => {
       cancelled = true
+      setIsLoading(false)
     }
   }, [resolvedAssessmentId, studentId, token])
 
@@ -716,6 +722,10 @@ function TakeAssessmentPage() {
         </p>
       </div>
     )
+  }
+
+  if (isLoading) {
+    return <LoadingPage message="Loading assessment…" />
   }
 
   return (

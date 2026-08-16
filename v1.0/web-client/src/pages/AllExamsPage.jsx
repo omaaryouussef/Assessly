@@ -16,6 +16,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
 import { formatDueDateTimeLabel, getAssessmentStatus } from '../utils/assessmentDue'
+import LoadingPage from '../components/LoadingPage'
 
 const EXAM_ICONS = {
   CODING: faCode,
@@ -204,6 +205,7 @@ function AllExamsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [examToEdit, setExamToEdit] = useState(null)
   const [examToDelete, setExamToDelete] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
   const canManage = user?.role === 'INSTRUCTOR' || user?.role === 'TA'
   const navigate = useNavigate()
   const fetchExams = useCallback(async () => {
@@ -216,6 +218,7 @@ function AllExamsPage() {
     if (!response.ok) throw new Error('Failed to fetch exams')
     const data = await response.json()
     setExamsList(Array.isArray(data) ? data : [])
+    setIsLoading(false)
   }, [courseId, token])
 
   const fetchStudents = useCallback(async () => {
@@ -291,10 +294,14 @@ function AllExamsPage() {
   )
 
   useEffect(() => {
-    if (!courseId || !token) return
+    if (!courseId || !token) {
+      setIsLoading(false)
+      return
+    }
     fetchExams().catch((error) => {
       console.error('Failed to fetch exams', error)
       setExamsList([])
+      setIsLoading(false)
     })
   }, [courseId, token, fetchExams])
 
@@ -492,6 +499,9 @@ function AllExamsPage() {
     }
   }
 
+  if (isLoading) {
+    return <LoadingPage message="Loading exams…" />
+  }
   return (
     <div className="assignments-page-container">
       <div className="course-special-header">
@@ -630,7 +640,7 @@ function AllExamsPage() {
               <strong>{examToPublish.title}</strong>.
             </p>
             {isLoadingStudents ? (
-              <p>Loading students...</p>
+              <LoadingPage variant="inline" message="Loading students…" />
             ) : (
               <>
                 <label className="publish-student-row publish-student-row--select-all">
@@ -710,7 +720,7 @@ function AllExamsPage() {
               <p className="error-message">{actionErrMessage}</p>
             )}
             {isLoadingStudents ? (
-              <p>Loading students...</p>
+              <LoadingPage variant="inline" message="Loading students…" />
             ) : studentsList.length === 0 ? (
               <p>
                 All students can access <strong>{examToPublish.title}</strong>

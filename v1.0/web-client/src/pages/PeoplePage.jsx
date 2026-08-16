@@ -9,7 +9,7 @@ import {
   faTrash,
   faPlus,
 } from '@fortawesome/free-solid-svg-icons'
-
+import LoadingPage from '../components/LoadingPage'
 function PeopleRow({ person, isInstructorUser, onRequestRemove }) {
   const isInstructor = person.role === 'INSTRUCTOR'
 
@@ -50,10 +50,15 @@ function PeoplePage() {
   const [addErrMessage, setAddErrMessage] = useState('')
   const [isRemoving, setIsRemoving] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchPeople = useCallback(async () => {
-    if (!courseId || !token) return
+    if (!courseId || !token) {
+      setIsLoading(false)
+      return
+    }
 
+    setIsLoading(true)
     try {
       const response = await fetch(
         `${getApiBase()}/api/courses/people/${courseId}`,
@@ -68,12 +73,18 @@ function PeoplePage() {
       setInstructor(data.instructor ?? null)
     } catch (error) {
       console.error('Failed to fetch people.', error)
+    } finally {
+      setIsLoading(false)
     }
   }, [courseId, token])
 
   useEffect(() => {
     fetchPeople()
   }, [fetchPeople])
+
+  if (isLoading) {
+    return <LoadingPage message="Loading people…" />
+  }
 
   const handleRequestRemove = (person) => {
     setRemoveErrMessage('')

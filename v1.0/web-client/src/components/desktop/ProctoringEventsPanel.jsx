@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { getApiBase } from '../../config/api'
 import { useAuth } from '../auth/AuthWrapper'
+import LoadingPage from '../LoadingPage'
 
 function formatEventLabel(eventType) {
   return String(eventType || '')
@@ -65,7 +66,9 @@ function ProctoringEventsPanel({ assessmentId, studentId }) {
   }, [assessmentId, studentId, token])
 
   if (loading) {
-    return <p className="proctoring-events-empty">Loading proctoring log...</p>
+    return (
+      <LoadingPage variant="inline" message="Loading proctoring log…" />
+    )
   }
 
   if (error) {

@@ -22,7 +22,7 @@ import {
   parseDueTimeForInput,
 } from '../../utils/assessmentDue'
 import { normalizeSecuritySettings } from '../../utils/securitySettings'
-
+import LoadingPage from '../../components/LoadingPage'
 function AssessmentStudioPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -30,7 +30,7 @@ function AssessmentStudioPage() {
   const assessmentToEdit = location.state?.assessmentToEdit || null
   const { courseId } = useParams()
   const { token } = useAuth()
-
+  const [isLoading, setIsLoading] = useState(true)
   // Draft management
   const draftSnapshotRef = useRef(null)
   // Start true so Strict Mode remount / init races cannot persist a half-ready form.
@@ -186,6 +186,7 @@ function AssessmentStudioPage() {
 
   const loadAssessmentForEdit = useCallback(
     async (assessmentId) => {
+      setIsLoading(true)
       const response = await fetch(
         `${getApiBase()}/api/assessments/${assessmentId}`,
         {
@@ -228,6 +229,7 @@ function AssessmentStudioPage() {
         }))
       )
       setEditingAssessment({ assessment_id: assessmentId })
+      setIsLoading(false)
     },
     [token]
   )
@@ -249,6 +251,7 @@ function AssessmentStudioPage() {
   }, [])
 
   useEffect(() => {
+    setIsLoading(true)
     let active = true
     // Block autosave until init finishes (or the draft modal is resolved).
     skipDraftPersistRef.current = true
@@ -266,12 +269,14 @@ function AssessmentStudioPage() {
       if (navType) {
         setType(navType)
       }
+      setIsLoading(false)
     }
 
     const finishInit = () => {
       if (!active) return
       setDraftResolved(true)
       enableDraftPersist()
+      setIsLoading(false)
     }
 
     const initializeStudio = async () => {
@@ -881,6 +886,10 @@ function AssessmentStudioPage() {
         )}
       </div>
     )
+  }
+
+  if (isLoading) {
+    return <LoadingPage message="Loading assessment studio…" />
   }
 
   return (

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { getApiBase } from '../../config/api'
+import LoadingPage from '../../components/LoadingPage'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -107,6 +108,10 @@ function AdminInvitesPage() {
     }
   }
 
+  if (loading) {
+    return <LoadingPage message="Loading invites…" />
+  }
+
   return (
     <div className="admin-invites-page">
       <section className="admin-invites-card">
@@ -143,9 +148,7 @@ function AdminInvitesPage() {
         <div className="admin-invites-header">
           <h2>Recent invites</h2>
         </div>
-        {loading ? (
-          <p>Loading…</p>
-        ) : invites.length === 0 ? (
+        {invites.length === 0 ? (
           <p className="admin-invites-empty">No invites yet.</p>
         ) : (
           <div className="admin-invites-table-wrap">

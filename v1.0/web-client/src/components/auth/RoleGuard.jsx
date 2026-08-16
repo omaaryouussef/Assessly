@@ -1,12 +1,13 @@
 import React from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from './AuthWrapper.jsx'
+import LoadingPage from '../LoadingPage.jsx'
 
 function RoleGuard({ allowedRoles }) {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return null
+    return <LoadingPage message="Checking access…" />
   }
 
   if (user?.role && allowedRoles.includes(user.role)) {

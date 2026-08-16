@@ -12,7 +12,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../components/auth/AuthWrapper'
 import { useCourseContext } from '../../contexts/CourseContext'
-
+import LoadingPage from '../components/LoadingPage'
 function formatValue(value) {
   if (!value || String(value).trim() === '') return 'Not set'
   return value
@@ -27,7 +27,10 @@ function CourseHomePage() {
   const [isLoading, setIsLoading] = useState(true)
 
   const fetchCourseHome = useCallback(async () => {
-    if (!courseId || !token) return
+    if (!courseId || !token) {
+      setIsLoading(false)
+      return
+    }
 
     setIsLoading(true)
     setErrorMessage('')
@@ -41,11 +44,11 @@ function CourseHomePage() {
         throw new Error(data.error || 'Failed to load course home')
       }
       setHomeData(data)
+      setIsLoading(false)
     } catch (error) {
       console.error('Failed to fetch course home', error)
       setHomeData(null)
       setErrorMessage(error.message || 'Failed to load course home')
-    } finally {
       setIsLoading(false)
     }
   }, [courseId, token])
@@ -56,6 +59,10 @@ function CourseHomePage() {
 
   const pageTitle =
     homeData?.course_title ?? courseData?.coursetitle ?? 'Course'
+
+  if (isLoading) {
+    return <LoadingPage message="Loading course home…" />
+  }
 
   return (
     <div className="course-home-page-container">
@@ -68,9 +75,7 @@ function CourseHomePage() {
         <p>Home</p>
       </div>
 
-      {isLoading ? (
-        <p className="course-home-status">Loading course details...</p>
-      ) : errorMessage ? (
+      {errorMessage ? (
         <p className="course-home-status course-home-status--error">
           {errorMessage}
         </p>

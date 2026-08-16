@@ -5,8 +5,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChartLine, faCommentDots } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getAssessmentStatus } from '../../utils/assessmentDue'
+import LoadingPage from '../../components/LoadingPage'  
 
 function AssessmentRow({ assessment, user }) {
+  const [isLoading, setIsLoading] = useState(true)
   const status = getAssessmentStatus(assessment)
   const { courseId } = useParams()
   const navigate = useNavigate()
@@ -90,6 +92,7 @@ function ViewGradesPage() {
   const [assessmentsList, setAssessmentsList] = useState([])
 
   useEffect(() => {
+    setIsLoading(true)
     const fetchAssessments = async () => {
       try {
         const response = await fetch(
@@ -107,10 +110,15 @@ function ViewGradesPage() {
         setAssessmentsList(data)
       } catch (error) {
         console.error('Failed to fetch assessments', error)
+      } finally {
+        setIsLoading(false)
       }
     }
     fetchAssessments()
   }, [courseId, token])
+  if (isLoading) {
+    return <LoadingPage message="Loading grades…" />
+  }
   return (
     <div className="view-grades-page">
       <div className="course-special-header view-grades-header">

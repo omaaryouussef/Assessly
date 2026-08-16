@@ -2,11 +2,15 @@ import React from 'react'
 import DesktopApiSettings from '../components/desktop/DesktopApiSettings'
 import { useAuth } from '../components/auth/AuthWrapper.jsx'
 import { isDesktopApp } from '../config/api'
+import LoadingPage from '../components/LoadingPage'
 
 function AccountPage() {
   const { user } = useAuth()
   const department = user?.department || 'CSCE'
   const isDesktop = isDesktopApp()
+  if (!user) {
+    return <LoadingPage message="Loading account…" />
+  }
   return (
     <div className="account-page">
       <section className="account-profile-card">

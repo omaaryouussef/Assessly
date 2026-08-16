@@ -4,7 +4,7 @@ import { getApiBase } from '../config/api'
 import { useAuth } from '../components/auth/AuthWrapper.jsx'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
-
+import LoadingPage from '../components/LoadingPage'
 function formatDateKey(date) {
   return date.toISOString().split('T')[0]
 }
@@ -46,8 +46,12 @@ function SchedulePage() {
   const minAllowedDate = new Date(currentYear - 1, 0, 1)
   const [showDayModal, setShowDayModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
-
+  const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
+    if (!token) {
+      setIsLoading(false)
+      return
+    }
     const fetchAssessments = async () => {
       const headers = { Authorization: `Bearer ${token}` }
 
@@ -71,13 +75,20 @@ function SchedulePage() {
         setExams(examsData)
         setQuizzes(quizzesData)
         setAssignments(assignmentsData)
+        setIsLoading(false)
       } catch (error) {
         console.error('Error fetching assessment schedule data:', error)
+        setIsLoading(false)
       }
     }
 
     fetchAssessments()
   }, [token])
+  
+  
+  if (isLoading) {
+    return <LoadingPage message="Loading schedule…" />
+  }
 
   const handleDayClick = (date) => {
     setSelectedDate(date)

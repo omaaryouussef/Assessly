@@ -16,6 +16,7 @@ import {
   faPenToSquare,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
+import LoadingPage from '../components/LoadingPage'
 
 const ICON_THEMES = ['blue', 'orange', 'purple', 'gray']
 const CARD_ICONS = [faCode, faSitemap, faTerminal, faBookOpen]
@@ -138,7 +139,7 @@ function CourseCard({ course, isInstructor }) {
 function AllCoursesPage() {
   const { user, token } = useAuth()
   const [courseList, setCourseList] = useState([])
-
+  const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
     const fetchCourses = async () => {
       const response = await fetch(`${getApiBase()}/api/courses/`, {
@@ -149,9 +150,14 @@ function AllCoursesPage() {
       if (!response.ok) throw new Error('Failed to fetch courses.')
       const data = await response.json()
       setCourseList(data)
+      setIsLoading(false)
     }
     fetchCourses()
-  }, [])
+  }, [token])
+  
+  if (isLoading) {
+    return <LoadingPage message="Loading courses…" />
+  }
   const isInstructor = user?.role === 'INSTRUCTOR'
   const isTa = user?.role === 'TA'
   const actionPath = isInstructor ? '/create-course' : '/join-course'

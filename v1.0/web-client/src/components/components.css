@@ -245,3 +245,120 @@ html[data-sidebar="hidden"] .app-content--with-sidebar {
 .sidebar-expand-button:hover {
   color: #00558c;
 }
+
+/* ========================================================================================== */
+/* Loading page */
+.loading-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(19, 91, 236, 0.08), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 90% 90%, rgba(248, 233, 217, 0.55), transparent 50%),
+    #f2f4f9;
+}
+
+.loading-page::before,
+.loading-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: #135bec;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.loading-page::before {
+  width: 280px;
+  height: 280px;
+  top: -120px;
+  left: -80px;
+}
+
+.loading-page::after {
+  width: 320px;
+  height: 320px;
+  right: -100px;
+  bottom: -140px;
+  background: var(--primary-color);
+  opacity: 0.06;
+}
+
+.loading-page__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: min(100%, 22rem);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(8px);
+  animation: loading-page-enter 0.45s ease-out;
+}
+
+.loading-page--inline {
+  min-height: 0;
+  width: 100%;
+  padding: 1.5rem 0.75rem;
+  background: transparent;
+}
+
+.loading-page--inline::before,
+.loading-page--inline::after {
+  display: none;
+}
+
+.loading-page--inline .loading-page__panel {
+  width: auto;
+  max-width: 100%;
+  padding: 1rem 1.25rem;
+  gap: 0.875rem;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  backdrop-filter: none;
+  animation: none;
+}
+
+.loading-page--inline .loading-page__message {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.loading-page__message {
+  margin: 0.25rem 0 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.01em;
+}
+
+@keyframes loading-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .loading-page__panel {
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
+  }
+}

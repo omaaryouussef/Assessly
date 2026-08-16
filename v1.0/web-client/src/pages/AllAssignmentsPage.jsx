@@ -20,6 +20,7 @@ import {
   formatDueDateTimeLabel,
   getAssessmentStatus,
 } from '../utils/assessmentDue'
+import LoadingPage from '../components/LoadingPage'
 
 const ASSIGNMENT_ICONS = {
   CODING: faCode,
@@ -164,6 +165,7 @@ function AllAssignmentsPage() {
   const [assignmentToEdit, setAssignmentToEdit] = useState(null)
   const [assignmentToDelete, setAssignmentToDelete] = useState(null)
   const [deleteErrMessage, setDeleteErrMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const canManage = user?.role === 'INSTRUCTOR' || user?.role === 'TA'
 
   const fetchAssignments = async () => {
@@ -176,14 +178,19 @@ function AllAssignmentsPage() {
     if (!response.ok) throw new Error('Failed to fetch assignments')
     const data = await response.json()
     setAssignmentsList(Array.isArray(data) ? data : [])
+    setIsLoading(false)
   }
 
   useEffect(() => {
-    if (!courseId || !token) return
+    if (!courseId || !token) {
+      setIsLoading(false)
+      return
+    }
     setCurrentDateTime(new Date())
     fetchAssignments().catch((error) => {
       console.error('Failed to fetch assignments', error)
       setAssignmentsList([])
+      setIsLoading(false)
     })
   }, [courseId, token])
 
@@ -273,6 +280,9 @@ function AllAssignmentsPage() {
       console.error('Failed to delete assignment', error)
       setDeleteErrMessage(error.message || 'Failed to delete assignment')
     }
+  }
+  if (isLoading) {
+    return <LoadingPage message="Loading assignments…" />
   }
   return (
     <div className="assignments-page-container">

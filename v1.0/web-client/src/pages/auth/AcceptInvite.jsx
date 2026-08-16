@@ -8,6 +8,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../../components/auth/AuthWrapper'
 import { getApiBase } from '../../config/api'
+import LoadingPage from '../../components/LoadingPage'
 
 function AcceptInvite() {
   const navigate = useNavigate()
@@ -105,16 +106,7 @@ function AcceptInvite() {
   }
 
   if (loadingInvite) {
-    return (
-      <div className="register-container">
-        <div className="register-form">
-          <div className="form-header-text">
-            <h3>Instructor invitation</h3>
-            <p>Validating your invite…</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingPage message="Validating your invite…" />
   }
 
   if (!email) {

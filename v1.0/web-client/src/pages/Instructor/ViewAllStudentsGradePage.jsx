@@ -5,6 +5,7 @@ import { useAuth } from '../../components/auth/AuthWrapper'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChartLine } from '@fortawesome/free-solid-svg-icons'
 import { getAssessmentStatus } from '../../utils/assessmentDue'
+import LoadingPage from '../../components/LoadingPage'
 
 function usesInlineGrading(assessment) {
   if (assessment.has_submitted) return false
@@ -141,8 +142,9 @@ function ViewAllStudentsGradePage() {
   const [loadError, setLoadError] = useState('')
   const [saveError, setSaveError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-
+  const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
+    setIsLoading(true)
     const fetchAssessmentsForAllStudents = async () => {
       try {
         const response = await fetch(
@@ -162,6 +164,8 @@ function ViewAllStudentsGradePage() {
       } catch (error) {
         console.error('Failed to fetch assessments for all students', error)
         setLoadError(error.message || 'Failed to load grades')
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -342,6 +346,10 @@ function ViewAllStudentsGradePage() {
   }
 
   const columnCount = assessmentColumns.length
+
+  if (isLoading) {
+    return <LoadingPage message="Loading grades…" />
+  }
 
   return (
     <div className="view-grades-page instructor-grades-page">

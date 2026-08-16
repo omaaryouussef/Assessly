@@ -16,6 +16,8 @@ import {
   formatSubmissionLateness,
   getAssessmentStatus,
 } from '../utils/assessmentDue'
+import LoadingPage from '../components/LoadingPage'
+
 
 const EMPTY_QUESTION_FEEDBACK = {
   instructorFeedback: [],
@@ -623,6 +625,11 @@ function AssessmentFeedbackPage() {
 
     let cancelled = false
 
+    if (!courseId || !token) {
+      setIsLoading(false)
+      return
+    }
+
     const loadPageData = async () => {
       setIsLoading(true)
       setLoadError('')
@@ -713,6 +720,7 @@ function AssessmentFeedbackPage() {
         setQuestionGrades(initialGrades)
         setSavedGrades(initialGrades)
         setQuestionsFeedbackData(normalizedFeedback)
+        setIsLoading(false)
       } catch (error) {
         if (!cancelled) {
           console.error('Failed to load assessment feedback page', error)
@@ -728,6 +736,10 @@ function AssessmentFeedbackPage() {
       cancelled = true
     }
   }, [assessmentId, studentId, token, user, isStudentViewer])
+
+  if (isLoading) {
+    return <LoadingPage message="Loading feedback…" />
+  }
 
   const assessmentStatus = useMemo(
     () =>
@@ -1087,7 +1099,7 @@ function AssessmentFeedbackPage() {
             />
 
             {isLoading ? (
-              <p className="assessment-feedback-loading">Loading submission…</p>
+              <LoadingPage variant="inline" message="Loading submission…" />
             ) : questionsList.length === 0 ? (
               <p className="assessment-feedback-empty">
                 This assessment has no questions yet.
