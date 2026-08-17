@@ -258,36 +258,7 @@ html[data-sidebar="hidden"] .app-content--with-sidebar {
   padding: 2rem 1.25rem;
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(19, 91, 236, 0.08), transparent 55%),
-    radial-gradient(ellipse 60% 45% at 90% 90%, rgba(248, 233, 217, 0.55), transparent 50%),
-    #f2f4f9;
-}
-
-.loading-page::before,
-.loading-page::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  background: #135bec;
-  opacity: 0.08;
-  pointer-events: none;
-}
-
-.loading-page::before {
-  width: 280px;
-  height: 280px;
-  top: -120px;
-  left: -80px;
-}
-
-.loading-page::after {
-  width: 320px;
-  height: 320px;
-  right: -100px;
-  bottom: -140px;
-  background: var(--primary-color);
-  opacity: 0.06;
+  background: white;
 }
 
 .loading-page__panel {
@@ -313,11 +284,6 @@ html[data-sidebar="hidden"] .app-content--with-sidebar {
   width: 100%;
   padding: 1.5rem 0.75rem;
   background: transparent;
-}
-
-.loading-page--inline::before,
-.loading-page--inline::after {
-  display: none;
 }
 
 .loading-page--inline .loading-page__panel {
